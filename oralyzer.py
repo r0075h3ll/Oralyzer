@@ -69,7 +69,6 @@ def analyze(url):
     file = open('payloads.txt','r')
     urls = []
     redirect_codes = [i for i in range(300,311,1)]
-    print_for_once = True
 
 #-----------------------------------------------------------------#
     
