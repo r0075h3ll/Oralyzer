@@ -3,7 +3,7 @@
 ### Introduction
 
 
-Oralyzer, a simple python script, capable of indentifying the open redirection vulnerability in a website. It does that by fuzzing the url i.e. provided as the input.
+Oralyzer, a simple python script, capable of identifying the open redirection vulnerability in a website. It does that by fuzzing the url i.e. provided as the input.
 
 ### Features
 
