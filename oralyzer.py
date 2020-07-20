@@ -84,9 +84,9 @@ def analyze(url):
             page = get(uri, allow_redirects=False, headers=header, timeout=10)
 
         soup = BeautifulSoup(page.text,'html.parser')
-        location = 'window.location' in str(soup.script)
-        href = 'location.href' in str(soup.script)
-        google = 'http://www.google.com' in str(soup.script)
+        location = 'window.location' in str(soup.find_all('script'))
+        href = 'location.href' in str(soup.find_all('script'))
+        google = 'http://www.google.com' in str(soup.find_all('script'))
         metas = soup.find_all('meta')
 #----------------------------------------------------------------------------------------------#
         if page.status_code in redirect_codes:
@@ -95,7 +95,10 @@ def analyze(url):
                 meta_tag_search = "http://www.google.com" in meta
                 if meta_tag_search and "http-equiv=\"refresh\"" in meta:
                     print("%s Meta Tag Redirection" % good)
-                    exit()
+                    break
+                else:
+                        continue
+                break
             print("%s %s Header Based Redirection : %s -> \033[92m%s\033[00m" % (good, hue, uri, page.headers['Location']))
             
         elif page.status_code==200:
