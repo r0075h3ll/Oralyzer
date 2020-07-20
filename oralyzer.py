@@ -90,7 +90,6 @@ def analyze(url):
         metas = soup.find_all('meta')
 #----------------------------------------------------------------------------------------------#
         if page.status_code in redirect_codes:
-            global meta_tag_search
             for meta in metas:
                 meta_tag_search = "http://www.google.com" in meta
                 if meta_tag_search and "http-equiv=\"refresh\"" in meta:
@@ -121,6 +120,7 @@ def analyze(url):
                 break
 #------------------------------------------------------------------------------------#
             for meta in metas:
+                meta_tag_search = "http://www.google.com" in meta
                 if meta_tag_search and "http-equiv=\"refresh\"" in str(page.text):
                     print("%s Meta Tag Redirection" % good)
                     break
