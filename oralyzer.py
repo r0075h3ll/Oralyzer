@@ -15,8 +15,7 @@ try:
 except ImportError:
         print("%s Oralyzer requires atleast Python 3.6.x to run." % bad)
         exit()
-from requests import *
-
+import requests
 #----------------------------------------------------------------------------------#
 
 parser = argparse.ArgumentParser()
@@ -79,26 +78,37 @@ def analyze(url):
     for uri in urls:
         header = {'User-Agent': random.choice(user)}
         if args.proxy:
-            page = get(uri, allow_redirects=False, headers=header, proxies=proxies, timeout=60)
+            try:
+                page = requests.get(uri, allow_redirects=False, headers=header, proxies=proxies, timeout=40)
+            except requests.exceptions.Timeout:
+                print("{} \033[1mTimeout\033[00m: {}".format(bad, uri))
+                continue
+            except requests.exceptions.ConnectionError:
+                print("{} \033[1mConnection Error\033[00m: {}".format(bad, uri))
+                continue
         else:
-            page = get(uri, allow_redirects=False, headers=header, timeout=10)
+            try:
+                page = requests.get(uri, allow_redirects=False, headers=header, timeout=15)
+            except requests.exceptions.Timeout:
+                print("{} \033[1mTimeout\033[00m: {}".format(bad, uri))
+                continue
+            except requests.exceptions.ConnectionError:
+                print("{} \033[1mConnection Error\033[00m: {}".format(bad, uri))
+                continue
 
         soup = BeautifulSoup(page.text,'html.parser')
         location = 'window.location' in str(soup.find_all('script'))
         href = 'location.href' in str(soup.find_all('script'))
         google = 'http://www.google.com' in str(soup.find_all('script'))
-        metas = soup.find_all('meta')
+        metas = str(soup.find_all('meta'))
+        meta_tag_search = "http://www.google.com" in metas
 #----------------------------------------------------------------------------------------------#
         if page.status_code in redirect_codes:
-            for meta in metas:
-                meta_tag_search = "http://www.google.com" in meta
-                if meta_tag_search and "http-equiv=\"refresh\"" in meta:
-                    print("%s Meta Tag Redirection" % good)
-                    break
-                else:
-                        continue
+            if meta_tag_search and "http-equiv=\"refresh\"" in metas:
+                print("%s Meta Tag Redirection" % good)
                 break
-            print("%s %s Header Based Redirection : %s -> \033[92m%s\033[00m" % (good, hue, uri, page.headers['Location']))
+            else:
+                print("%s %s Header Based Redirection : %s -> \033[92m%s\033[00m" % (good, hue, uri, page.headers['Location']))
             
         elif page.status_code==200:
             if google:
@@ -119,17 +129,12 @@ def analyze(url):
                 print("%s Try fuzzing it for DOM XSS or Visit: \033[92m%s\033[00m or \033[92m%s\033[00m o" % (info,url+'"><img src=1 onerror=alert(1) />',url+'javascript:alert(1)'))
                 break
 #------------------------------------------------------------------------------------#
-            for meta in metas:
-                meta_tag_search = "http://www.google.com" in meta
-                if meta_tag_search and "http-equiv=\"refresh\"" in str(page.text):
-                    print("%s Meta Tag Redirection" % good)
-                    break
-                elif "http-equiv=\"refresh\"" in str(page.text) and not meta_tag_search:
-                    print("%s The page is only getting refreshed" % bad)
-                    break
-            else:
-                continue
-            break
+            if meta_tag_search and "http-equiv=\"refresh\"" in str(page.text):
+                print("%s Meta Tag Redirection" % good)
+                break
+            elif "http-equiv=\"refresh\"" in str(page.text) and not meta_tag_search:
+                print("%s The page is only getting refreshed" % bad)
+                break
 #----------------------------------------------------------------------------------------#
         elif page.status_code==404:
             print("%s %s \033[92m\033[1m->\033[00m\033[00m (Not Found)\033[91m404\033[00m" %(bad,uri))
@@ -148,7 +153,7 @@ try:
             for url in file:
                 print("%s URL : \033[92m%s\033[00m" % (info, url.rstrip('\n')))
                 analyze(url.rstrip('\n'))
-                print('\033[1m----------------------------------[-]----------------------------------\033[00m')
+                print(80*"\033[1m-\033[00m")
 
 except KeyboardInterrupt: 
     print("\n\033[91mQuitting...\033[00m")
