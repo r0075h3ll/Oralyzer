@@ -7,12 +7,13 @@ Oralyzer, a simple python script, capable of identifying the open redirection vu
 
 ### Features
 
-Oralyzer can identify different types of Open Redirect Vulnerabilities :
+Oralyzer can identify different types of Open Redirect Vulnerabilities:
  - Header Based
  - Javascript Based
  - Meta Tag Based<br>
- 
- 
+
+Oralyzer uses <a href="https://github.com/tomnomnom/waybackurls">waybackurls</a> to fetch URLs from archive.org, it then separates and stores the URLs that have specific parameters in them, parameters that are more likely to be vulnerable.
+
 ### Installation
 
 Oralyzer is built with python3.6 and hence aforesaid version would be ideal for it's smooth functioning.<br>
@@ -20,15 +21,16 @@ Oralyzer is built with python3.6 and hence aforesaid version would be ideal for 
 ```
 $ git clone https://github.com/0xNanda/Oralyzer.git
 $ pip3 install -r requirements.txt
+$ go get github.com/tomnomnom/waybackurls
 ```
 
 ### Usage
 
-<img src="https://i.ibb.co/rFfzHnD/carbon-1.png">
+<img src="https://i.ibb.co/FDr1wcY/carbon.png">
 
 ### Contribution
 
-This program is buggy and the only way it can be improved is by your contribution. And you can do that in following ways :
+This program is buggy and the only way it can be improved is by your contribution. And you can do that in following ways:
 
 - Create pull requests
 - Report bugs

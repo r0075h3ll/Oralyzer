@@ -8,7 +8,8 @@ print("\n\t\033[3mOralyzer\033[00m \033[1m{\033[00m\033[1m\033[92mOpen Redirecti
 
 #---------------------------------------------------------#
 
-import argparse,sys,re,random
+import argparse,os,re,random
+from wayback import *
 from bs4 import BeautifulSoup
 try:
         from urllib.parse import *
@@ -19,13 +20,17 @@ import requests
 #----------------------------------------------------------------------------------#
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-u', '--url', help='target', dest='url')
+parser.add_argument('-u', '--url', help='target', dest="url")
 parser.add_argument('-f', '--file', help='scan multiple targets', dest='path')
-parser.add_argument('--proxy', help='use proxy', dest='proxy')
+parser.add_argument('-p', '--proxy', help='use proxy', dest='proxy')
+parser.add_argument('-w', '--wayback', help='use wayback to fetch juicy urls', action="store_true", dest='waybacks')
+parser.add_argument('-o', '--output', help='store the urls found by wayback', dest='output')
 args = parser.parse_args()
 url = args.url
 path = args.path
 proxy = args.proxy
+waybacks = args.waybacks
+output = args.output
 #-------------------------------------------------------#
 
 if args.url==None and args.path==None:
@@ -84,8 +89,8 @@ def analyze(url):
                 print("{} \033[1mTimeout\033[00m: {}".format(bad, uri))
                 continue
             except requests.exceptions.ConnectionError:
-                print("{} \033[1mConnection Error\033[00m: {}".format(bad, uri))
-                continue
+                print("{} \033[1mConnection Error\033[00m".format(bad))
+                break
         else:
             try:
                 page = requests.get(uri, allow_redirects=False, headers=header, timeout=15)
@@ -93,8 +98,8 @@ def analyze(url):
                 print("{} \033[1mTimeout\033[00m: {}".format(bad, uri))
                 continue
             except requests.exceptions.ConnectionError:
-                print("{} \033[1mConnection Error\033[00m: {}".format(bad, uri))
-                continue
+                print("{} \033[1mConnection Error\033[00m".format(bad))
+                break
 
         soup = BeautifulSoup(page.text,'html.parser')
         location = 'window.location' in str(soup.find_all('script'))
@@ -143,17 +148,31 @@ def analyze(url):
         elif page.status_code==400:
             print("%s %s \033[92m->\033[00m (Bad Request)\033[91m400\033[00m" % (bad,uri))
 #-------------------------------------------------------------------------------------------------------------------------------#
-
 try:
-    if args.url:
+    if args.waybacks==False and args.url:
         analyze(url)
 
-    elif args.path:
+    elif args.waybacks==False and args.path:
         with open(path, "r") as file:
             for url in file:
                 print("%s URL : \033[92m%s\033[00m" % (info, url.rstrip('\n')))
                 analyze(url.rstrip('\n'))
                 print(80*"\033[1m-\033[00m")
+
+    elif args.url and args.waybacks and args.output:
+        print("{} Getting juicy URLs with Wayback".format(info))
+        get_urls(url, output)
+
+    elif args.path and args.waybacks and args.output:
+        print("{} Getting juicy URLs with Wayback".format(info))
+        with open(path, "r") as file:
+            for url in file:
+                print("%s URL : \033[92m%s\033[00m" % (info, url.rstrip('\n')))
+                get_urls(url.rstrip('\n'), output)
+                print(80*"\033[1m-\033[00m")
+
+    else:
+        print("{} Filename not specified".format(bad))
 
 except KeyboardInterrupt: 
     print("\n\033[91mQuitting...\033[00m")
