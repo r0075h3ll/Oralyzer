@@ -12,7 +12,7 @@ Oralyzer can identify different types of Open Redirect Vulnerabilities:
  - Javascript Based
  - Meta Tag Based<br>
 
-Oralyzer uses <a href="https://github.com/tomnomnom/waybackurls">waybackurls</a> to fetch URLs from archive.org, it then separates and stores the URLs that have specific parameters in them, parameters that are more likely to be vulnerable.
+Oralyzer uses <a href="https://github.com/tomnomnom/waybackurls">waybackurls</a> to fetch URLs from archive.org, it then separates the URLs that have specific parameters in them, parameters that are more likely to be vulnerable.
 
 ### Installation
 
@@ -26,7 +26,7 @@ $ go get github.com/tomnomnom/waybackurls
 
 ### Usage
 
-<img src="https://i.ibb.co/FDr1wcY/carbon.png">
+<img src="https://i.ibb.co/k5xf340/carbon-2.png">
 
 ### Contribution
 

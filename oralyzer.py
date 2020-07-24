@@ -9,7 +9,7 @@ print("\n\t\033[3mOralyzer\033[00m \033[1m{\033[00m\033[1m\033[92mOpen Redirecti
 #---------------------------------------------------------#
 
 import argparse,os,re,random
-from wayback import *
+from core.wayback import *
 from bs4 import BeautifulSoup
 try:
         from urllib.parse import *
@@ -155,19 +155,19 @@ try:
     elif args.waybacks==False and args.path:
         with open(path, "r") as file:
             for url in file:
-                print("%s URL : \033[92m%s\033[00m" % (info, url.rstrip('\n')))
+                print("%s Target \033[91m~>\033[00m \033[92m%s\033[00m" % (info, url.rstrip('\n')))
                 analyze(url.rstrip('\n'))
                 print(80*"\033[1m-\033[00m")
 
     elif args.url and args.waybacks and args.output:
-        print("{} Getting juicy URLs with Wayback".format(info))
+        print("{} Getting juicy URLs with \033[93mwaybackurls\033[00m".format(info))
         get_urls(url, output)
 
     elif args.path and args.waybacks and args.output:
-        print("{} Getting juicy URLs with Wayback".format(info))
+        print("{} Getting juicy URLs with \033[93mwaybackurls\033[00m".format(info))
         with open(path, "r") as file:
             for url in file:
-                print("%s URL : \033[92m%s\033[00m" % (info, url.rstrip('\n')))
+                print("%s Target \033[91m~>\033[00m \033[92m%s\033[00m" % (info, url.rstrip('\n')))
                 get_urls(url.rstrip('\n'), output)
                 print(80*"\033[1m-\033[00m")
 
