@@ -33,7 +33,7 @@ def get_urls(url, path):
     urls.append(no_output.stdout)
     for url in urls:
         match = re.search("|".join(dorks), url)
-        print("{} {}".format("\033[92m•\033[00m", match.group()))
+        print("{} {}".format("[\033[92m•\033[00m]", match.group()))
         matched.append(match.group())
 
     if len(matched) > 0:
