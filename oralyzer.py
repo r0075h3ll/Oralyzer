@@ -53,7 +53,7 @@ proxies = { "http": proxy, "https": proxy }
 
 def analyze(url):
     http = urlsplit(url).scheme
-    if http==False:
+    if http=='':
         url = 'http://'+url
     if http==True:
         if http=='https':
