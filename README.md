@@ -16,7 +16,7 @@ Oralyzer uses <a href="https://github.com/tomnomnom/waybackurls">waybackurls</a>
 
 ### Installation
 
-Use <img src="https://img.shields.io/badge/python-v3.7-blue" /><br>
+<img src="https://img.shields.io/badge/python-v3.7-blue" /><br>
 
 ```
 $ git clone https://github.com/0xNanda/Oralyzer.git
