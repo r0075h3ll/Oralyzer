@@ -16,7 +16,7 @@ Oralyzer uses <a href="https://github.com/tomnomnom/waybackurls">waybackurls</a>
 
 ### Installation
 
-Oralyzer is built with python3.6 and hence aforesaid version would be ideal for it's smooth functioning.<br>
+Use <img src="https://img.shields.io/badge/python-v3.7-blue" /><br>
 
 ```
 $ git clone https://github.com/0xNanda/Oralyzer.git
