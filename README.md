@@ -28,6 +28,13 @@ $ go get github.com/tomnomnom/waybackurls
 
 <img src="https://i.ibb.co/dK8Q100/carbon-7.png">
 
+### Upcoming Features
+
+- [ ] Improved DOM XSS detection mechanism
+- [ ] Test multiple parameters in one run
+- [ ] Improved speed
+- [ ] CRLF Injection Detection 
+
 ### Contribution
 
 This program is buggy and the only way it can be improved is by your contribution. And you can do that in following ways:
