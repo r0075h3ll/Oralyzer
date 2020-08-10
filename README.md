@@ -30,10 +30,10 @@ $ go get github.com/tomnomnom/waybackurls
 
 ### Upcoming Features
 
-- [ ] Improved DOM XSS detection mechanism
-- [ ] Test multiple parameters in one run
-- [ ] Improved speed
-- [ ] CRLF Injection Detection 
+- Improved DOM XSS detection mechanism
+- Test multiple parameters in one run
+- Improved speed
+- CRLF Injection Detection 
 
 ### Contribution
 
