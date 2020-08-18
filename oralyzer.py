@@ -4,11 +4,11 @@ good = "[\033[1m\033[92m•\033[00m\033[00m]"
 bad = "[\033[1m\033[91m•\033[00m\033[00m]"
 info = "[\033[1m\033[93m•\033[00m\033[00m]"
 
-print('''\033[92m   ____           __                
+print('''\033[92m   ____           __
   / __ \_______ _/ /_ _____ ___ ____
  / /_/ / __/ _ `/ / // /_ // -_) __/
- \____/_/  \_,_/_/\_, //__/\__/_/   
-                 /___/              
+ \____/_/  \_,_/_/\_, //__/\__/_/
+                 /___/
 \033[00m''')
 
 #---------------------------------------------------------#
@@ -167,7 +167,6 @@ try:
             for url in uris:
                 print("%s Target: \033[1m\033[92m%s\033[00m\033[00m" % (info, url.rstrip('\n')))
                 analyze(url.rstrip('\n'))
-            if len(uris) > 1:
                 print(80*"\033[97m—\033[00m")
 
     elif args.url and args.waybacks:
@@ -188,11 +187,10 @@ try:
                 print("%s Target: \033[1m\033[92m%s\033[00m\033[00m" % (info, url.rstrip('\n')))
                 try:
                     get_urls(url.rstrip('\n'), "wayback_{}.txt".format(random.randint(0,100)))
+                    print(80*"\033[97m—\033[00m")
                 except KeyboardInterrupt:
                     print("\n\033[91mQuitting...\033[00m")
                     exit()
-                if len(uris) > 1:
-                    print(80*"\033[97m—\033[00m")
 
     else:
         print("%s Filename not specified" % bad)
