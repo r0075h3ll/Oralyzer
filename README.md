@@ -26,7 +26,7 @@ $ go get github.com/tomnomnom/waybackurls
 
 ### Usage
 
-<img src="https://i.ibb.co/0rCwRqn/carbon.png">
+<img src="https://i.ibb.co/kcxCdK7/carbon-1.png">
 
 ### Upcoming Features
 
