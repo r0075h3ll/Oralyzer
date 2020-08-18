@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 #https://twitter.com/0xNanda
-good = "[\033[92m•\033[00m]" 
-bad = "[\033[91m•\033[00m]"
-info = "[\033[93m•\033[00m]"
-hue = '\033[1mHeuristics\033[00m:'
-print("\n\t\033[3mOralyzer\033[00m \033[1m{\033[00m\033[1m\033[92mOpen Redirection Analyzer\033[00m\033[00m\033[1m}\033[00m\n")
+good = "[\033[1m\033[92m•\033[00m\033[00m]"
+bad = "[\033[1m\033[91m•\033[00m\033[00m]"
+info = "[\033[1m\033[93m•\033[00m\033[00m]"
+
+print('''\033[92m   ____           __                
+  / __ \_______ _/ /_ _____ ___ ____
+ / /_/ / __/ _ `/ / // /_ // -_) __/
+ \____/_/  \_,_/_/\_, //__/\__/_/   
+                 /___/              
+\033[00m''')
 
 #---------------------------------------------------------#
 
@@ -20,21 +25,21 @@ import requests
 #----------------------------------------------------------------------------------#
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-u', '--url', help='target', dest="url")
-parser.add_argument('-f', '--file', help='scan multiple targets', dest='path')
+parser.add_argument('-u', '--url', help='scan single target', dest="url")
+parser.add_argument('-f', '--file', help='scan multiple target', dest='path')
+parser.add_argument('--payload', help='use payloads from a file', dest='payload')
 parser.add_argument('-p', '--proxy', help='use proxy', dest='proxy')
-parser.add_argument('-w', '--wayback', help='use wayback to fetch juicy urls', action="store_true", dest='waybacks')
-parser.add_argument('-o', '--output', help='store the urls found by wayback', dest='output')
+parser.add_argument('-w', '--wayback', help='fetch URLs from archive.org', action="store_true", dest='waybacks')
 args = parser.parse_args()
 url = args.url
 path = args.path
 proxy = args.proxy
 waybacks = args.waybacks
-output = args.output
+payload = args.payload
 #-------------------------------------------------------#
 
 if args.url==None and args.path==None:
-    print('Made with \033[91m<3\033[00m by 0xNanda')
+    print('Made by \033[97m0xNanda\033[00m')
     parser.print_help()
     exit()
 
@@ -70,35 +75,37 @@ def analyze(url):
             print('%s Appending payloads just after the URL' % info)
             url = url+'/'
     print('%s Infusing payloads' % info)
-    file = open('payloads.txt','r')
+    if args.payload:
+        file = open(args.payload,'r')
+    else:
+        file = open('payloads.txt', 'r')
     urls = []
     redirect_codes = [i for i in range(300,311,1)]
 
 #-----------------------------------------------------------------#
-    
 
     for payload in file:
         urls.append(url+payload.rstrip('\n'))
- 
+
     for uri in urls:
         header = {'User-Agent': random.choice(user)}
         if args.proxy:
             try:
-                page = requests.get(uri, allow_redirects=False, headers=header, proxies=proxies, timeout=40)
+                page = requests.get(uri, allow_redirects=False, headers=header, proxies=proxies, timeout=30)
             except requests.exceptions.Timeout:
-                print("%s \033[1mTimeout\033[00m: %s" % (bad, uri))
+                print("[\033[91mTimeout\033[00m] %s" % uri)
                 continue
             except requests.exceptions.ConnectionError:
-                print("%s \033[1mConnection Error\033[00m" % bad)
+                print("%s Connection Error" % bad)
                 break
         else:
             try:
-                page = requests.get(uri, allow_redirects=False, headers=header, timeout=15)
+                page = requests.get(uri, allow_redirects=False, headers=header, timeout=10)
             except requests.exceptions.Timeout:
-                print("%s \033[1mTimeout\033[00m: %s" % (bad, uri))
+                print("[\033[91mTimeout\033[00m] %s" % uri)
                 continue
             except requests.exceptions.ConnectionError:
-                print("%s \033[1mConnection Error\033[00m" % bad)
+                print("%s Connection Error" % bad)
                 break
 
         soup = BeautifulSoup(page.text,'html.parser')
@@ -113,25 +120,25 @@ def analyze(url):
                 print("%s Meta Tag Redirection" % good)
                 break
             else:
-                print("%s %s Header Based Redirection : %s -> \033[92m%s\033[00m" % (good, hue, uri, page.headers['Location']))
-            
+                print("%s Header Based Redirection : %s ▶ \033[92m%s\033[00m" % (good, uri, page.headers['Location']))
+
         elif page.status_code==200:
             if google:
 #---------------------------------------------------------------------------------------------_#
-                print("%s %s Javascript Based Redirection" % (good,hue))
+                print("%s Javascript Based Redirection" % good)
                 if location and href:
-                    print("%s Vulnerable Source Found: \033[91mwindow.location\033[00m" % (good))
-                    print("%s Vulnerable Source Found: \033[91mlocation.href\033[00m" % (good))
+                    print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % (good))
+                    print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % (good))
                 elif href:
-                    print("%s Vulnerable Source Found: \033[91mlocation.href\033[00m" % (good))
+                    print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % (good))
                 elif location:
-                    print("%s Vulnerable Source Found: \033[91mwindow.location\033[00m" % (good))
-                print("%s Try fuzzing it for DOM XSS or Visit: \033[92m%s\033[00m or \033[92m%s\033[00m" % (info,url+'javascript:alert(1)', url+'"><img src=1 onerror=alert(1) />'))
+                    print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % (good))
+                print("%s Try fuzzing the URL for DOM XSS" % info)
                 break
 
             elif location and google==None:
-                print("%s Vulnerable Source Found: \033[91mwindow.location\033[00m" % (good))
-                print("%s Try fuzzing it for DOM XSS or Visit: \033[92m%s\033[00m or \033[92m%s\033[00m o" % (info,url+'"><img src=1 onerror=alert(1) />',url+'javascript:alert(1)'))
+                print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % (good))
+                print("%s Try fuzzing the URL for DOM XSS" % info)
                 break
 #------------------------------------------------------------------------------------#
             if meta_tag_search and "http-equiv=\"refresh\"" in str(page.text):
@@ -142,39 +149,55 @@ def analyze(url):
                 break
 #----------------------------------------------------------------------------------------#
         elif page.status_code==404:
-            print("%s %s \033[92m\033[1m->\033[00m\033[00m (Not Found)\033[91m404\033[00m" % (bad,uri))
+            print("[\033[91m404\033[00m] %s" % uri)
         elif page.status_code==403:
-            print("%s %s \033[92m\033[1m->\033[00m\033[00m (Forbidden)\033[91m403\033[00m" % (bad,uri))
+            print("[\033[91m403\033[00m] %s" % uri)
         elif page.status_code==400:
-            print("%s %s \033[92m->\033[00m (Bad Request)\033[91m400\033[00m" % (bad,uri))
+            print("[\033[91m400\033[00m] %s" % uri)
 #-------------------------------------------------------------------------------------------------------------------------------#
 try:
     if args.waybacks==False and args.url:
         analyze(url)
 
     elif args.waybacks==False and args.path:
+        uris = []
         with open(path, "r") as file:
             for url in file:
-                print("%s Target \033[91m~>\033[00m \033[92m%s\033[00m" % (info, url.rstrip('\n')))
+                uris.append(url)
+            for url in uris:
+                print("%s Target: \033[1m\033[92m%s\033[00m\033[00m" % (info, url.rstrip('\n')))
                 analyze(url.rstrip('\n'))
-                print(80*"\033[1m-\033[00m")
+            if len(uris) > 1:
+                print(80*"\033[97m—\033[00m")
 
-    elif args.url and args.waybacks and args.output:
-        print("%s Getting juicy URLs with \033[93mwaybackurls\033[00m" % info)
-        get_urls(url, output)
+    elif args.url and args.waybacks:
+        print("%s Getting juicy URLs with \033[1m\033[93mwaybackurls\033[00m\033[00m" % info)
+        try:
+            get_urls(url, "wayback_urls.txt")
+        except KeyboardInterrupt:
+            print("\n\033[91mQuitting...\033[00m")
+            exit()
 
-    elif args.path and args.waybacks and args.output:
+    elif args.path and args.waybacks:
         print("%s Getting juicy URLs with \033[93mwaybackurls\033[00m" % info)
+        uris = []
         with open(path, "r") as file:
             for url in file:
-                print("%s Target \033[91m~>\033[00m \033[92m%s\033[00m" % (info, url.rstrip('\n')))
-                get_urls(url.rstrip('\n'), output)
-                print(80*"\033[1m-\033[00m")
+                uris.append(url)
+            for url in uris:
+                print("%s Target: \033[1m\033[92m%s\033[00m\033[00m" % (info, url.rstrip('\n')))
+                try:
+                    get_urls(url.rstrip('\n'), "wayback_{}.txt".format(random.randint(0,100)))
+                except KeyboardInterrupt:
+                    print("\n\033[91mQuitting...\033[00m")
+                    exit()
+                if len(uris) > 1:
+                    print(80*"\033[97m—\033[00m")
 
     else:
         print("%s Filename not specified" % bad)
 
-except KeyboardInterrupt: 
+except KeyboardInterrupt:
     print("\n\033[91mQuitting...\033[00m")
 
 #----------------------------------------------------------------------------------------------------------------------------------#

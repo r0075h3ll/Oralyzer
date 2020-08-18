@@ -33,7 +33,7 @@ def get_urls(url, path):
     urls.append(no_output.stdout)
     for url in urls:
         match = re.search("|".join(dorks), url)
-        print("{} {}".format("[\033[92m•\033[00m]", match.group()))
+        print("{} {}".format("[\033[1m\033[92m•\033[00m\033[00m]", match.group()))
         matched.append(match.group())
 
     if len(matched) > 0:
@@ -41,4 +41,4 @@ def get_urls(url, path):
             file.write("{}\n".format(matches))
 
     else:
-        print("{} No juicy URLs found".format("[\033[91m•\033[99m]"))
+        print("{} No juicy URLs found".format("[\033[1m\033[91m•\033[99m\033[00m]"))
