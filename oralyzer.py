@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 #https://twitter.com/0xNanda
-good = "[\033[1m\033[92m•\033[00m\033[00m]"
-bad = "[\033[1m\033[91m•\033[00m\033[00m]"
-info = "[\033[1m\033[93m•\033[00m\033[00m]"
-
 print('''\033[92m   ____           __
   / __ \_______ _/ /_ _____ ___ ____
  / /_/ / __/ _ `/ / // /_ // -_) __/
@@ -14,10 +10,11 @@ print('''\033[92m   ____           __
 #---------------------------------------------------------#
 
 import argparse,re,random
-from core.wayback import *
+from core.wayback import get_urls
+from core.colors import good,bad,info
 from bs4 import BeautifulSoup
 try:
-        from urllib.parse import *
+        from urllib.parse import urlsplit
 except ImportError:
         print("%s Oralyzer requires atleast Python 3.6.x to run." % bad)
         exit()

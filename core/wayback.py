@@ -1,4 +1,5 @@
 import subprocess,re
+from core.colors import good,bad,info
 
 dorks = [
         '.*\?next=',
@@ -29,11 +30,19 @@ matched = []
 def get_urls(url, path):
 
     file = open(path,"w")
-    no_output = subprocess.run(['waybackurls', url], capture_output=True, text=True)
+    try:
+        no_output = subprocess.run(['waybackurls', url], capture_output=True, text=True)
+    except FileNotFoundError:
+        print("%s waybackurls not found" % bad)
+        exit()
     urls.append(no_output.stdout)
     for url in urls:
         match = re.search("|".join(dorks), url)
-        print("{} {}".format("[\033[1m\033[92m•\033[00m\033[00m]", match.group()))
+        try:
+            print("%s %s" % (good,match.group()))
+        except AttributeError:
+            print("%s No juicy URLs found" % bad)
+            exit()
         matched.append(match.group())
 
     if len(matched) > 0:
@@ -41,4 +50,4 @@ def get_urls(url, path):
             file.write("{}\n".format(matches))
 
     else:
-        print("{} No juicy URLs found".format("[\033[1m\033[91m•\033[99m\033[00m]"))
+        print("%s No juicy URLs found" % bad)
