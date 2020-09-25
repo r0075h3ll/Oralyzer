@@ -1,28 +1,28 @@
 import subprocess,re
-from core.colors import good,bad,info
+from core.others import good,bad,info
 
 dorks = [
-        '.*\?next=',
-        '.*\?url=',
-        '.*\?target=',
-        '.*\?rurl=',
-        '.*\/dest=',
-        '.*\/destination',
-        '.*\?redir=',
-        '.*\?redirect_uri=',
-        '.*\?return=',
-        '.*\?return_path',
-        '.*\/cgi-bin\/redirect.cgi?',
-        '.*\?checkout_url=',
-        '.*\?image_url=',
-        '.*\/out\?',
-        '.*\?continue=',
-        '.*\?view=',
-        '.*\/redirect\/',
-        '.*\?go=',
-        '.*\?redirect=',
-        '.*\?URL=',
-        '.*\?externallink='
+        '.*\?next=.*',
+        '.*\?url=.*',
+        '.*\?target=.*',
+        '.*\?rurl=.*',
+        '.*\/dest=.*',
+        '.*\/destination.*',
+        '.*\?redir=.*',
+        '.*\?redirect_uri=.*',
+        '.*\?return=.*',
+        '.*\?return_path.*',
+        '.*\/cgi-bin\/redirect.cgi\?.*',
+        '.*\?checkout_url=.*',
+        '.*\?image_url=.*',
+        '.*\/out\?.*',
+        '.*\?continue=.*',
+        '.*\?view=.*',
+        '.*\/redirect\/.*',
+        '.*\?go=.*',
+        '.*\?redirect=.*',
+        '.*\?URL=.*',
+        '.*\?externallink=.*'
         ]
 
 urls = []
