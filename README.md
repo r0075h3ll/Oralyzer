@@ -1,4 +1,4 @@
-<img src="https://i.ibb.co/DLzGqVx/bitmap.png" align="center">
+<img src="https://i.ibb.co/pR55wPZ/g882.png">
 
 ### Introduction
 
@@ -16,7 +16,7 @@ Oralyzer uses <a href="https://github.com/tomnomnom/waybackurls">waybackurls</a>
 
 ### Installation
 
-Use python v3.7<br>
+Use **python v3.7**<br>
 
 ```
 $ git clone https://github.com/0xNanda/Oralyzer.git
@@ -25,19 +25,18 @@ $ go get github.com/tomnomnom/waybackurls
 ```
 
 ### Usage
-
-<img src="https://i.ibb.co/kcxCdK7/carbon-1.png">
+<img src="https://i.ibb.co/ZH0DNhT/carbon-5.png">
 
 ### Upcoming Features
 
-- Improved DOM XSS detection mechanism
-- Test multiple parameters in one run
-- Improved speed
-- CRLF Injection Detection 
+- [ ] Improved DOM XSS detection mechanism
+- [ ] Test multiple parameters in one run
+- [ ] Improved speed
+- [x] CRLF Injection Detection 
 
 ### Contribution
 
-This program is buggy and the only way it can be improved is by your contribution. And you can do that in following ways:
+You can contribute to this program in following ways:
 
 - Create pull requests
 - Report bugs

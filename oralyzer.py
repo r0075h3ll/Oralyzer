@@ -25,10 +25,10 @@ import requests
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', '--url', help='scan single target', dest="url")
 parser.add_argument('-l', '--list', help='scan multiple target', dest='path')
+parser.add_argument('-crlf', help='scan for CRLF Injection', action='store_true', dest='crlf')
 parser.add_argument('-p', '--payload', help='use payloads from a file', dest='payload')
 parser.add_argument('--proxy', help='use proxy', action='store_true' , dest='proxy')
-parser.add_argument('-w', '--wayback', help='fetch URLs from archive.org', action="store_true", dest='waybacks')
-parser.add_argument('-crlf', help='scan for CRLF Injection', action='store_true', dest='crlf')
+parser.add_argument('--wayback', help='fetch URLs from archive.org', action="store_true", dest='waybacks')
 args = parser.parse_args()
 url = args.url
 path = args.path
