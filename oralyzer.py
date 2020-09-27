@@ -11,65 +11,47 @@ print('''\033[92m   ____           __
 
 import argparse,re,random
 from core.wayback import get_urls
-from core.colors import good,bad,info
+from core.crlf import CrlfScan
+from core.others import good,bad,info,requester
 from bs4 import BeautifulSoup
 try:
         from urllib.parse import urlsplit
 except ImportError:
-        print("%s Oralyzer requires atleast Python 3.6.x to run." % bad)
+        print("%s Oralyzer requires atleast Python 3.7.x to run." % bad)
         exit()
 import requests
 #----------------------------------------------------------------------------------#
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', '--url', help='scan single target', dest="url")
-parser.add_argument('-f', '--file', help='scan multiple target', dest='path')
-parser.add_argument('--payload', help='use payloads from a file', dest='payload')
-parser.add_argument('-p', '--proxy', help='use proxy', dest='proxy')
+parser.add_argument('-l', '--list', help='scan multiple target', dest='path')
+parser.add_argument('-p', '--payload', help='use payloads from a file', dest='payload')
+parser.add_argument('--proxy', help='use proxy', action='store_true' , dest='proxy')
 parser.add_argument('-w', '--wayback', help='fetch URLs from archive.org', action="store_true", dest='waybacks')
+parser.add_argument('-crlf', help='scan for CRLF Injection', action='store_true', dest='crlf')
 args = parser.parse_args()
 url = args.url
 path = args.path
 proxy = args.proxy
-waybacks = args.waybacks
-payload = args.payload
 #-------------------------------------------------------#
 
 if args.url==None and args.path==None:
     print('Made by \033[97m0xNanda\033[00m')
     parser.print_help()
     exit()
-
-user = ['Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36 OPR/43.0.2442.991',
-'Mozilla/5.0 (Linux; U; Android 4.2.2; en-us; A1-810 Build/JDQ39) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30',
-'Mozilla/5.0 (Windows NT 5.1; rv:52.0) Gecko/20100101 Firefox/52.0',
-'Mozilla/5.0 (PLAYSTATION 3 4.81) AppleWebKit/531.22.8 (KHTML, like Gecko)',
-'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36 OPR/48.0.2685.52',
-'Mozilla/5.0 (SMART-TV; X11; Linux armv7l) AppleWebKit/537.42 (KHTML, like Gecko) Chromium/25.0.1349.2 Chrome/25.0.1349.2 Safari/537.42',
-'Mozilla/5.0 (Windows NT 6.0; WOW64; Trident/7.0; rv:11.0) like Gecko',
-'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/601.2.7 (KHTML, like Gecko)',
-'Mozilla/5.0 (PlayStation 4 5.01) AppleWebKit/601.2 (KHTML, like Gecko)']
-
-proxies = { "http": proxy, "https": proxy }
 #-------------------------------------------------------#
 
 def analyze(url):
-    http = urlsplit(url).scheme
-    if http=='':
-        url = 'http://'+url
-    if http==True:
-        if http=='https':
-            url = url.replace('https','http')
     parameter = '=' in url
     if parameter:
         if url.endswith('=')==False:
             print("%s Omit the value of parameter that you wanna fuzz" % info)
             exit()
     elif parameter==False:
+        print('%s Appending payloads just after the URL' % info)
         if url.endswith('/')==True:
             pass
         elif url.endswith('/')==False:
-            print('%s Appending payloads just after the URL' % info)
             url = url+'/'
     print('%s Infusing payloads' % info)
     if args.payload:
@@ -85,22 +67,21 @@ def analyze(url):
         urls.append(url+payload.rstrip('\n'))
 
     for uri in urls:
-        header = {'User-Agent': random.choice(user)}
         if args.proxy:
             try:
-                page = requests.get(uri, allow_redirects=False, headers=header, proxies=proxies, timeout=30)
+                page = requester(uri,True)
             except requests.exceptions.Timeout:
-                print("[\033[91mTimeout\033[00m] %s" % uri)
-                continue
+                print("[\033[91mTimeout\033[00m] %s" % url)
+                break
             except requests.exceptions.ConnectionError:
                 print("%s Connection Error" % bad)
                 break
         else:
             try:
-                page = requests.get(uri, allow_redirects=False, headers=header, timeout=10)
+                page = requester(uri,False)
             except requests.exceptions.Timeout:
-                print("[\033[91mTimeout\033[00m] %s" % uri)
-                continue
+                print("[\033[91mTimeout\033[00m] %s" % url)
+                break
             except requests.exceptions.ConnectionError:
                 print("%s Connection Error" % bad)
                 break
@@ -124,17 +105,17 @@ def analyze(url):
 #---------------------------------------------------------------------------------------------_#
                 print("%s Javascript Based Redirection" % good)
                 if location and href:
-                    print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % (good))
-                    print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % (good))
+                    print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % good)
+                    print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % good)
                 elif href:
-                    print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % (good))
+                    print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % good)
                 elif location:
-                    print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % (good))
+                    print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % good)
                 print("%s Try fuzzing the URL for DOM XSS" % info)
                 break
 
             elif location and google==None:
-                print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % (good))
+                print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % good)
                 print("%s Try fuzzing the URL for DOM XSS" % info)
                 break
 #------------------------------------------------------------------------------------#
@@ -144,17 +125,45 @@ def analyze(url):
             elif "http-equiv=\"refresh\"" in str(page.text) and not meta_tag_search:
                 print("%s The page is only getting refreshed" % bad)
                 break
-#----------------------------------------------------------------------------------------#
-        elif page.status_code==404:
+
+
+        if page.status_code==404:
             print("[\033[91m404\033[00m] %s" % uri)
         elif page.status_code==403:
             print("[\033[91m403\033[00m] %s" % uri)
         elif page.status_code==400:
             print("[\033[91m400\033[00m] %s" % uri)
+
 #-------------------------------------------------------------------------------------------------------------------------------#
 try:
-    if args.waybacks==False and args.url:
+    if args.waybacks==False and args.crlf==False and args.url:
         analyze(url)
+
+    elif args.crlf:
+
+        if args.proxy and args.path:
+            uris = []
+            with open(path, "r") as file:
+                for url in file:
+                    uris.append(url)
+                for url in uris:
+                    print("%s Target: \033[1m\033[92m%s\033[00m\033[00m" % (info, url.rstrip('\n')))
+                    CrlfScan(url.rstrip('\n'),True)
+                    print(80*"\033[97m—\033[00m")
+        elif args.proxy and not args.path:
+            CrlfScan(url,True)
+
+        elif args.path and not args.proxy:
+            uris = []
+            with open(path, "r") as file:
+                for url in file:
+                    uris.append(url)
+                for url in uris:
+                    print("%s Target: \033[1m\033[92m%s\033[00m\033[00m" % (info, url.rstrip('\n')))
+                    CrlfScan(url.rstrip('\n'),False)
+                    print(80*"\033[97m—\033[00m")
+        else:
+            CrlfScan(url,False)
 
     elif args.waybacks==False and args.path:
         uris = []
@@ -194,5 +203,4 @@ try:
 
 except KeyboardInterrupt:
     print("\n\033[91mQuitting...\033[00m")
-
 #----------------------------------------------------------------------------------------------------------------------------------#
