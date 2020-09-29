@@ -18,11 +18,12 @@ user = ['Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Ge
 header = {'User-Agent': random.choice(user)}
 with open('core/config.json', 'r') as file:
     proxies = json.load(file)['proxies']
+request = requests.Session()
 
 def requester(url,proxy):
     if proxy:
-        webpage = requests.get(url, allow_redirects=False, headers=header, proxies=proxies, verify=False ,timeout=30)
+        webpage = request.get(url, allow_redirects=False, headers=header, proxies=proxies, verify=False ,timeout=30)
     else:
-        webpage = requests.get(url, allow_redirects=False, headers=header, timeout=10, verify=False)
+        webpage = request.get(url, allow_redirects=False, headers=header, timeout=10, verify=False)
 
     return webpage
