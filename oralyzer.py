@@ -57,7 +57,7 @@ def analyze(url):
     if args.payload:
         file = open(args.payload,'r')
     else:
-        file = open('payloads.txt', 'r')
+        file = open('Oralyzer/payloads.txt', 'r')
     urls = []
     redirect_codes = [i for i in range(300,311,1)]
 
