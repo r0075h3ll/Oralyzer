@@ -14,10 +14,15 @@ user = ['Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Ge
 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/601.2.7 (KHTML, like Gecko)',
 'Mozilla/5.0 (PlayStation 4 5.01) AppleWebKit/601.2 (KHTML, like Gecko)']
 
+paths = ["Oralyzer/core/config.json", "core/config.json"]
 
 header = {'User-Agent': random.choice(user)}
-with open('Oralyzer/core/config.json', 'r') as file:
-    proxies = json.load(file)['proxies']
+try:
+	file = open(paths[0])
+except FileNotFoundError:
+	file = open(paths[1])
+
+proxies = json.load(file)['proxies']
 request = requests.Session()
 
 def requester(url,proxy):
