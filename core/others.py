@@ -16,7 +16,7 @@ user = ['Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Ge
 
 
 header = {'User-Agent': random.choice(user)}
-with open('core/config.json', 'r') as file:
+with open('Oralyzer/core/config.json', 'r') as file:
     proxies = json.load(file)['proxies']
 request = requests.Session()
 
