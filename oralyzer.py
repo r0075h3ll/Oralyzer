@@ -9,7 +9,7 @@ print('''\033[92m   ____           __
 
 #---------------------------------------------------------#
 
-import argparse,re,random
+import argparse,re,random,warnings,ssl
 from core.wayback import get_urls
 from core.crlf import CrlfScan
 from core.others import good,bad,info,requester
@@ -20,6 +20,8 @@ except ImportError:
         print("%s Oralyzer requires atleast Python 3.7.x to run." % bad)
         exit()
 import requests
+warnings.filterwarnings('ignore')
+ssl._create_default_https_context = ssl._create_unverified_context
 #----------------------------------------------------------------------------------#
 
 parser = argparse.ArgumentParser()
