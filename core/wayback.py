@@ -7,7 +7,7 @@ dorks = [
         '.*\?target=.*',
         '.*\?rurl=.*',
         '.*\/dest=.*',
-        '.*\/destination.*',
+        '.*\/destination=.*',
         '.*\?redir=.*',
         '.*\?redirect_uri=.*',
         '.*\?return=.*',
@@ -22,7 +22,8 @@ dorks = [
         '.*\?go=.*',
         '.*\?redirect=.*',
         '.*\?URL=.*',
-        '.*\?externallink=.*'
+        '.*\?externallink=.*',
+        '.*\?nextURL=.*'
         ]
 
 urls = []
@@ -43,7 +44,7 @@ def get_urls(url, path):
         except AttributeError:
             print("%s No juicy URLs found" % bad)
             exit()
-        matched.append(match.group())
+        matched.append(match.group()) 
 
     if len(matched) > 0:
         for matches in matched:
