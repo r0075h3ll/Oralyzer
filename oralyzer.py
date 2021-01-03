@@ -61,71 +61,46 @@ def analyze(url):
     global MultiTest
     MultiTest = multitest(url,FilePath)
 
+    print('%s Infusing payloads' % info)
     if type(MultiTest) is tuple:
-        MutlipleParameters(MultiTest[0],MultiTest[1])
-
+        for params in MultiTest[0]:
+            TestingBreak = request(MultiTest[1],params)
+            if TestingBreak:
+                break
     else:
-        Empty(MultiTest)
-#--------------------------------------------------------#   
-def MutlipleParameters(ParameterList,uri,PayloadIndex = 0):
-    print('%s Infusing payloads' % info)
-    for params in ParameterList:
-        if args.proxy:
-            try:
-                page = requester(uri,True,params)
-                function_break = check(page,unquote(page.request.url),file[PayloadIndex])
-                PayloadIndex += 1
-                if function_break:
-                    break
-            except requests.exceptions.Timeout:
-                print("[\033[91mTimeout\033[00m] %s" % url)
+        for url in MultiTest:
+            TestingBreak = request(url)
+            if TestingBreak:
                 break
-            except requests.exceptions.ConnectionError:
-                print("%s Connection Error" % bad)
-                break 
-        else:
-            try:
-                page = requester(uri,False,params)
-                function_break = check(page,unquote(page.request.url),file[PayloadIndex])
-                if function_break:
-                    break
-            except requests.exceptions.Timeout:
-                print("[\033[91mTimeout\033[00m] %s" % url)
-                break
-            except requests.exceptions.ConnectionError:
-                print("%s Connection Error" % bad)
-                break
-            except IndexError:
-                PayloadIndex = 0
-                
+#--------------------------------------------------------#
+def request(uri,params='',PayloadIndex=0):
+    skip = 1
+    if args.proxy:
+        try:
+            page = requester(uri,True,params)
+        except requests.exceptions.Timeout:
+            print("[\033[91mTimeout\033[00m] %s" % url)
+            return skip
+        except requests.exceptions.ConnectionError:
+            print("%s Connection Error" % bad)
+            return skip
+    else:
+        try:
+            page = requester(uri,False,params)
+        except requests.exceptions.Timeout:
+            print("[\033[91mTimeout\033[00m] %s" % url)
+            return skip
+        except requests.exceptions.ConnectionError:
+            print("%s Connection Error" % bad)
+            return skip
+        except IndexError:
+            PayloadIndex = 0
+
+    function_break = check(page,unquote(page.request.url),file[PayloadIndex])
+    PayloadIndex += 1
+    if function_break:
+        return skip                
 #--------------------------------------------------------------------#
-def Empty(URLlist,PayloadIndex = 0):
-    print('%s Infusing payloads' % info)
-
-    for uri in URLlist:
-        if args.proxy:
-            try:
-                page = requester(uri,True)
-            except requests.exceptions.Timeout:
-                print("[\033[91mTimeout\033[00m] %s" % url)
-                break
-            except requests.exceptions.ConnectionError:
-                print("%s Connection Error" % bad)
-                break 
-        else:
-            try:
-                page = requester(uri,False)
-            except requests.exceptions.Timeout:
-                print("[\033[91mTimeout\033[00m] %s" % url)
-                break
-            except requests.exceptions.ConnectionError:
-                print("%s Connection Error" % bad)
-                break
-        function_break = check(page,uri,file[PayloadIndex])
-        PayloadIndex += 1
-        if function_break:
-            break
-
 def check(PageVar,FinalUrl,payload='http://www.google.com'):
     skip = 1
     RedirectCodes = [i for i in range(300,311,1)]
