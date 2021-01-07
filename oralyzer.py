@@ -19,7 +19,6 @@ import argparse,re,random,warnings,ssl,requests
 from core.wayback import get_urls
 from core.crlf import CrlfScan
 from core.others import good,bad,info,requester,multitest,urlparse
-from urllib.parse import unquote
 from bs4 import BeautifulSoup
 warnings.filterwarnings('ignore')
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -43,17 +42,17 @@ if args.url==None and args.path==None:
 #--------------------------------------------------------#
 if args.payload:
     FilePath = args.payload
-    file = open(FilePath).read().splitlines()
+    file = open(FilePath, encoding='utf-8').read().splitlines()
 else:
     try:
         FilePath = 'payloads.txt'
-        file = open(FilePath).read().splitlines()
+        file = open(FilePath, encoding='utf-8').read().splitlines()
     except FileNotFoundError:
         print("%s Payload file not found! Try using '-p' flag to use payload file of your choice" % bad)
         exit()
 
 if args.path:
-    UrlList = open(path, "r").read().splitlines()
+    UrlList = open(path, encoding='utf-8').read().splitlines()
 #-------------------------------------------------------#
 def analyze(url):
     if urlparse(url).scheme == '':
@@ -96,7 +95,7 @@ def request(uri,params='',PayloadIndex=0):
         except IndexError:
             PayloadIndex = 0
 
-    function_break = check(page,unquote(page.request.url),file[PayloadIndex])
+    function_break = check(page,page.request.url,file[PayloadIndex])
     PayloadIndex += 1
     if function_break:
         return skip                

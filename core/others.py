@@ -16,7 +16,7 @@ user = ['Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Ge
 'Mozilla/5.0 (PlayStation 4 5.01) AppleWebKit/601.2 (KHTML, like Gecko)']
 
 header = {'User-Agent': random.choice(user)}
-proxies = {"http":"http://127.0.0.1:8080", "https":"http://127.0.0.1:8080" }
+proxies = {"http":"http://127.0.0.1:8000", "https":"http://127.0.0.1:8000" }
 request = requests.Session()
 
 def requester(url,proxy,parameters=''):
@@ -33,7 +33,7 @@ def multitest(url,PayloadPath="payloads.txt"):
     if type(PayloadPath) is list:
         payloads = PayloadPath
     else:
-        payloads = open(PayloadPath).read().splitlines()
+        payloads = open(PayloadPath, encoding='utf-8').read().splitlines()
 
     if '=' in url:
         if url.endswith('='):
