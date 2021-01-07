@@ -30,7 +30,7 @@ urls = []
 matched = []
 def get_urls(url, path):
 
-    file = open(path,"w")
+    file = open(path,"w", encoding='utf-8')
     try:
         no_output = subprocess.run(['waybackurls', url], capture_output=True, text=True)
     except FileNotFoundError:
