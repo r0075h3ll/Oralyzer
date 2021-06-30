@@ -1,16 +1,16 @@
 ### Introduction
 
 
-Oralyzer, a simple python script, capable of identifying the open redirection vulnerability in a website. It does that by fuzzing the url i.e. provided as the input.
+Oralyzer, a simple python script that is capable of finding the open redirection vulnerability in a website. It does that by fuzzing the url i.e. provided as the input.
 
 ### Features
 
-Oralyzer can identify different types of Open Redirect Vulnerabilities:
+Oralyzer can identify following types of Open Redirect Vulnerabilities:
  - Header Based
  - Javascript Based
  - Meta Tag Based<br>
 
-Oralyzer uses <a href="https://github.com/tomnomnom/waybackurls">waybackurls</a> to fetch URLs from web.archive.org, it then separates the URLs that have specific parameters in them, parameters that are more likely to be vulnerable.
+Also, Oralyzer uses its own wayback machine module to fetch URLs from web.archive.org, it then separates the URLs that have specific parameters in them, parameters that are more likely to be vulnerable.
 
 ### Installation
 
