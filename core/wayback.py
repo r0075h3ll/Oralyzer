@@ -1,5 +1,6 @@
-import subprocess,re
-from core.others import good,bad,info
+import subprocess,re,json
+from core.others import good,bad,info,requester
+import datetime
 
 dorks = [
         '.*\?next=.*',
@@ -31,19 +32,15 @@ matched = []
 def get_urls(url, path):
 
     file = open(path,"w", encoding='utf-8')
-    try:
-        no_output = subprocess.run(['waybackurls', url], capture_output=True, text=True)
-    except FileNotFoundError:
-        print("%s waybackurls not found" % bad)
-        exit()
-    urls.append(no_output.stdout)
+    fetcher(url)
+
     for url in urls:
         match = re.search("|".join(dorks), url)
         try:
             print("%s %s" % (good,match.group()))
         except AttributeError:
             print("%s No juicy URLs found" % bad)
-            exit()
+            return
         matched.append(match.group()) 
 
     if len(matched) > 0:
@@ -52,3 +49,12 @@ def get_urls(url, path):
 
     else:
         print("%s No juicy URLs found" % bad)
+
+def fetcher(url):
+        todate = datetime.date.today().year
+        fromdate = todate - 2
+        result = requester("https://web.archive.org/cdx/search/cdx?url=%s*&output=json&collapse=urlkey&filter=statuscode:200&limit=200from=%d&to=%d" % (url, fromdate, todate), False)
+        jsonOutput = json.loads(result.text)
+
+        for output in range(1, 101, 1):
+            urls.append(jsonOutput[output][2])
