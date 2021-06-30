@@ -19,7 +19,6 @@ Use **python v3.7**<br>
 ```
 $ git clone https://github.com/r0075h3ll/Oralyzer.git
 $ pip3 install -r requirements.txt
-$ go get github.com/tomnomnom/waybackurls
 ```
 
 ### Usage
