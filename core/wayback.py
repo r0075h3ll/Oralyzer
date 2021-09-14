@@ -36,12 +36,12 @@ def get_urls(url, path):
 
     for url in urls:
         match = re.search("|".join(dorks), url)
+
         try:
             print("%s %s" % (good,match.group()))
+            matched.append(match.group())
         except AttributeError:
-            print("%s No juicy URLs found" % bad)
-            return
-        matched.append(match.group()) 
+            continue 
 
     if len(matched) > 0:
         for matches in matched:
