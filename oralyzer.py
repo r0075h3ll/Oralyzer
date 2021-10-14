@@ -6,7 +6,7 @@ print('''\033[92m   ____           __
  \____/_/  \_,_/_/\_, //__/\__/_/
                  /___/
 \033[00m''')
-arrow = '\033[91m➤\033[00m'
+arrow = '\033[91m->\033[00m'
 #----------------------------------------------------------#
 import sys
 if sys.version_info.major > 2 and sys.version_info.minor > 6:
@@ -16,8 +16,8 @@ else:
     exit()
 #---------------------------------------------------------#
 import argparse,re,random,warnings,ssl,requests
-from core.wayback import get_urls
-from core.crlf import CrlfScan
+from core.wayback import getURLs
+from core.crlf import crlfScan
 from core.others import good,bad,info,requester,multitest,urlparse
 from bs4 import BeautifulSoup
 warnings.filterwarnings('ignore')
@@ -32,175 +32,261 @@ parser.add_argument('--proxy', help='use proxy', action='store_true' , dest='pro
 parser.add_argument('--wayback', help='fetch URLs from archive.org', action="store_true", dest='waybacks')
 args = parser.parse_args()
 url = args.url
-path = args.path
-proxy = args.proxy
+
+if (args.payload and (args.crlf or args.waybacks)): print("%s '-p' can't be used with '-crlf' or '--wayback'" % bad), exit()
 #-------------------------------------------------------#
-if args.url==None and args.path==None:
-    print('Made by \033[97mr0075h3ll\033[00m')
+if not (args.url or args.path):
+    print('Made by \033[1mr0075h3ll\033[00m')
     parser.print_help()
-    exit()
 #--------------------------------------------------------#
-if args.payload:
-    FilePath = args.payload
-    file = open(FilePath, encoding='utf-8').read().splitlines()
-else:
+if not args.crlf and not args.waybacks:
     try:
-        FilePath = 'payloads.txt'
-        file = open(FilePath, encoding='utf-8').read().splitlines()
+        if args.payload:
+            file = open(args.payload, encoding='utf-8').read().splitlines()
+        else:
+            file = open('payloads.txt', encoding='utf-8').read().splitlines()
     except FileNotFoundError:
         print("%s Payload file not found! Try using '-p' flag to use payload file of your choice" % bad)
         exit()
 
 if args.path:
-    UrlList = open(path, encoding='utf-8').read().splitlines()
+    try:
+        urls = open(args.path, encoding='utf-8').read().splitlines()
+    except FileNotFoundError: print("%s Target file not found" % bad), exit()
 #-------------------------------------------------------#
 def analyze(url):
-    if urlparse(url).scheme == '':
-        url = 'http://' + url
-    global MultiTest
-    MultiTest = multitest(url,FilePath)
+    multiTestCall = multitest(url,file)
 
     print('%s Infusing payloads' % info)
-    if type(MultiTest) is tuple:
-        for params in MultiTest[0]:
-            TestingBreak = request(MultiTest[1],params)
-            if TestingBreak:
+    if type(multiTestCall) == tuple:
+        for params in multiTestCall[0]:
+            testingBreak = request(multiTestCall[1],params)
+            if testingBreak:
                 break
     else:
-        for url in MultiTest:
-            TestingBreak = request(url)
-            if TestingBreak:
+        for url in multiTestCall:
+            testingBreak = request(url)
+            if testingBreak:
                 break
 #--------------------------------------------------------#
-def request(uri,params='',PayloadIndex=0):
-    skip = 1
-    if args.proxy:
-        try:
-            page = requester(uri,True,params)
-        except requests.exceptions.Timeout:
-            print("[\033[91mTimeout\033[00m] %s" % url)
-            return skip
-        except requests.exceptions.ConnectionError:
-            print("%s Connection Error" % bad)
-            return skip
-    else:
-        try:
-            page = requester(uri,False,params)
-        except requests.exceptions.Timeout:
-            print("[\033[91mTimeout\033[00m] %s" % url)
-            return skip
-        except requests.exceptions.ConnectionError:
-            print("%s Connection Error" % bad)
-            return skip
-        except IndexError:
-            PayloadIndex = 0
+def request(URI,params=''):
+    try:
+        page = requester(URI,args.proxy,params)
+    except requests.exceptions.Timeout:
+        print("[\033[91mTimeout\033[00m] %s" % url)
+        return True
+    except requests.exceptions.ConnectionError:
+        print("%s Connection Error" % bad)
+        return True
 
-    function_break = check(page,page.request.url,file[PayloadIndex])
-    PayloadIndex += 1
-    if function_break:
-        return skip                
+    funcBreak = check(page, page.request.url)
+    if funcBreak:
+        return True                
 #--------------------------------------------------------------------#
-def check(PageVar,FinalUrl,payload='http://www.google.com'):
-    skip = 1
-    RedirectCodes = [i for i in range(300,311,1)]
-    soup = BeautifulSoup(PageVar.text,'html.parser')
-    location = 'window.location' in str(soup.find_all('script'))
-    href = 'location.href' in str(soup.find_all('script'))
-    google = payload in str(soup.find_all('script'))
+def check(respOBJ,finalURL):
+    payload = "|".join([re.escape(i) for i in file])
+    redirectCodes = [red for red in range(300,311,1)]
+    errorCodes = [error for error in range(400, 411, 1)]
+    soup = BeautifulSoup(respOBJ.text,'html.parser')
+    google = re.search(payload, str(soup.find_all("script")), re.IGNORECASE)
     metas = str(soup.find_all('meta'))
-    meta_tag_search = payload in metas
+    metaTagSearch = re.search(payload, metas, re.IGNORECASE)
+
+    sourcesSinks = [  
+                "location.href",
+                "location.hash",
+                "location.search",
+                "location.pathname",
+                "document.URL",
+                "window.name",
+                "document.referrer",
+                "document.documentURI",
+                "document.baseURI",
+                "document.cookie",
+                "location.hostname",
+                "jQuery.globalEval",
+                "eval",
+                "Function",
+                "execScript",
+                "setTimeout",
+                "setInterval",
+                "setImmediate",
+                "msSetImmediate",
+                "script.src",
+                "script.textContent",
+                "script.text",
+                "script.innerText",
+                "script.innerHTML",
+                "script.appendChild",
+                "script.append",
+                "document.write",
+                "document.writeln",
+                "jQuery",
+                "jQuery.$",
+                "jQuery.constructor",
+                "jQuery.parseHTML",
+                "jQuery.has",
+                "jQuery.init",
+                "jQuery.index",
+                "jQuery.add",
+                "jQuery.append",
+                "jQuery.appendTo",
+                "jQuery.after",
+                "jQuery.insertAfter",
+                "jQuery.before",
+                "jQuery.insertBefore",
+                "jQuery.html",
+                "jQuery.prepend",
+                "jQuery.prependTo",
+                "jQuery.replaceWith",
+                "jQuery.replaceAll",
+                "jQuery.wrap",
+                "jQuery.wrapAll",
+                "jQuery.wrapInner",
+                "jQuery.prop.innerHTML",
+                "jQuery.prop.outerHTML",
+                "element.innerHTML",
+                "element.outerHTML",
+                "element.insertAdjacentHTML",
+                "iframe.srcdoc",
+                "location.replace",
+                "location.assign",
+                "window.open",
+                "iframe.src",
+                "javascriptURL",
+                "jQuery.attr.onclick",
+                "jQuery.attr.onmouseover",
+                "jQuery.attr.onmousedown",
+                "jQuery.attr.onmouseup",
+                "jQuery.attr.onkeydown",
+                "jQuery.attr.onkeypress",
+                "jQuery.attr.onkeyup",
+                "element.setAttribute.onclick",
+                "element.setAttribute.onmouseover",
+                "element.setAttribute.onmousedown",
+                "element.setAttribute.onmouseup",
+                "element.setAttribute.onkeydown",
+                "element.setAttribute.onkeypress",
+                "element.setAttribute.onkeyup",
+                "createContextualFragment",
+                "document.implementation.createHTMLDocument",
+                "xhr.open",
+                "xhr.send",
+                "fetch",
+                "fetch.body",
+                "xhr.setRequestHeader.name",
+                "xhr.setRequestHeader.value",
+                "jQuery.attr.href",
+                "jQuery.attr.src",
+                "jQuery.attr.data",
+                "jQuery.attr.action",
+                "jQuery.attr.formaction",
+                "jQuery.prop.href",
+                "jQuery.prop.src",
+                "jQuery.prop.data",
+                "jQuery.prop.action",
+                "jQuery.prop.formaction",
+                "form.action",
+                "input.formaction",
+                "button.formaction",
+                "button.value",
+                "element.setAttribute.href",
+                "element.setAttribute.src",
+                "element.setAttribute.data",
+                "element.setAttribute.action",
+                "element.setAttribute.formaction",
+                "webdatabase.executeSql",
+                "document.domain",
+                "history.pushState",
+                "history.replaceState",
+                "xhr.setRequestHeader",
+                "websocket",
+                "anchor.href",
+                "anchor.target",
+                "JSON.parse",
+                "localStorage.setItem.name",
+                "localStorage.setItem.value",
+                "sessionStorage.setItem.name",
+                "sessionStorage.setItem.value",
+                "element.outerText",
+                "element.innerText",
+                "element.textContent",
+                "element.style.cssText",
+                "RegExp",
+                "location.protocol",
+                "location.host",
+                "input.value",
+                "input.type",
+                "document.evaluate"
+            ]
+    escapedSourcesSinks = [re.escape(SnS) for SnS in sourcesSinks]
+    sourcesMatch = list(dict.fromkeys(re.findall("|".join(escapedSourcesSinks), str(soup))))
 #----------------------------------------------------------------------------------------------#
-    if PageVar.status_code in RedirectCodes:
-        if meta_tag_search and "http-equiv=\"refresh\"" in metas:
+    if respOBJ.status_code in redirectCodes:
+        if metaTagSearch and "http-equiv=\"refresh\"" in metas:
             print("%s Meta Tag Redirection" % good)
-            return skip
+            return True
             
         else:
-            print("%s Header Based Redirection : %s %s  \033[92m%s\033[00m" % (good, FinalUrl, arrow,PageVar.headers['Location']))
+            print("%s Header Based Redirection : %s %s  %s" % (good,finalURL,arrow,respOBJ.headers['Location']))
 
-    elif PageVar.status_code==200:
+    elif respOBJ.status_code==200:
         if google:
-#---------------------------------------------------------------------------------------------_#
+#---------------------------------------------------------------------------------------------#
             print("%s Javascript Based Redirection" % good)
-            if location and href:
-                print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % good)
-                print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % good)
-            elif href:
-                print("%s Vulnerable Source Found: \033[1mlocation.href\033[00m" % good)
-            elif location:
-                print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % good)
-            print("%s Try fuzzing the URL for DOM XSS" % info)
-            return skip
+            if sourcesMatch != None:
+                print("%s Potentially Vulnerable Source/Sink(s) Found: \033[1m%s\033[00m" % (good, " ".join(sourcesMatch)))
+            return True
 
-        elif location:
-            if 'window.location = {}'.format(payload):
-                print("%s Vulnerable Source Found: \033[1mwindow.location\033[00m" % good)
-                print("%s Try fuzzing the URL for DOM XSS" % info)
-                return skip
-            else:
-                print("%s Potentially Vulnerable Source Found: \033[1mwindow.location\033[00m")
 #------------------------------------------------------------------------------------#
-        if meta_tag_search and "http-equiv=\"refresh\"" in str(PageVar.text):
+        if metaTagSearch and "http-equiv=\"refresh\"" in str(respOBJ.text):
             print("%s Meta Tag Redirection" % good)
-            return skip
+            return True
 
-        elif "http-equiv=\"refresh\"" in str(PageVar.text) and not meta_tag_search:
+        elif "http-equiv=\"refresh\"" in str(respOBJ.text) and not metaTagSearch:
             print("%s The page is only getting refreshed" % bad)
-            return skip
+            return True
 
 #-------------------------------------------------------------------------------------#
-    elif PageVar.status_code==404:
-        print("%s %s [\033[91m404\033[00m]" % (bad,FinalUrl))
-    elif PageVar.status_code==403:
-        print("%s %s [\033[91m403\033[00m]" % (bad,FinalUrl))
-    elif PageVar.status_code==400:
-        print("%s %s [\033[91m400\033[00m]" % (bad,FinalUrl))
+    elif respOBJ.status_code in errorCodes:
+        print("%s %s [\033[91m%s\033[00m]" % (bad,finalURL,respOBJ.status_code))
 
     else:
-        print("%s Found nothing :: %s" % (bad,FinalUrl))
+        print("%s Found nothing :: %s" % (bad,finalURL))
 
 #-------------------------------------------------------------------------------------------------------------------------------#
 try:
-    if args.waybacks==False and args.crlf==False and args.url:
-        analyze(url)
+    if args.url:
+        if args.crlf and not args.waybacks:
+            crlfScan(url, args.proxy)
 
-    elif args.crlf:
-        if args.proxy and args.path:
-            for url in UrlList:
-                print("%s Target: \033[92m%s\033[00m" % (info, url))
-                CrlfScan(url,True)
-                print(80*"\033[97m—\033[00m")
-        elif args.proxy and not args.path:
-            CrlfScan(url,True)
+        elif args.waybacks and not args.crlf:
+            print("%s Getting juicy URLs from archive.org" % info)
+            getURLs(url, "wayback_urls.txt")
 
-        elif args.path and not args.proxy:
-            for url in UrlList:
-                print("%s Target: \033[92m%s\033[00m" % (info, url))
-                CrlfScan(url,False)
-                print(80*"\033[97m—\033[00m")
-        else:
-            CrlfScan(url,False)
-
-    elif args.waybacks==False and args.path:
-        for url in UrlList:
-            print("%s Target: \033[92m%s\033[00m" % (info, url))
+        elif not (args.crlf or args.waybacks):
             analyze(url)
-            print(80*"\033[97m—\033[00m")
+    
+    elif args.path:
+        if args.crlf and not args.waybacks:
+            for url in urls:
+                print("%s Target: %s" % (info, url))
+                crlfScan(url,args.proxy)
+                print("\n")
 
-    elif args.url and args.waybacks:
-        print("%s Getting juicy URLs with \033[1m\033[93mwaybackurls\033[00m\033[00m" % info)
-        get_urls(url, "wayback_urls.txt")
+        elif args.waybacks and not args.crlf:
+            print("%s Getting juicy URLs from archive.org" % info)
+            for url in urls:
+                print("%s URL: %s" % (info, url))
+                getURLs(url, "wayback-%d.txt" % random.randint(0,100))
+                print("\n")
 
-    elif args.path and args.waybacks:
-        print("%s Getting juicy URLs with \033[93mwaybackurls\033[00m" % info)
-        for url in UrlList:
-            print("%s Target: \033[92m%s\033[00m" % (info, url))
-            get_urls(url, "wayback_{}.txt".format(random.randint(0,100)))
-            print(80*"\033[97m—\033[00m")
-
-    else:
-        print("%s Filename not specified" % bad)
+        elif not (args.crlf or args.waybacks):
+            for url in urls:
+                print("%s Target: \033[92m%s\033[00m" % (info, url))
+                analyze(url)
+                print("\n")
 
 except KeyboardInterrupt:
-    print("\n\033[91mQuitting...\033[00m")
+    print("\nQuitting...")
     exit()
