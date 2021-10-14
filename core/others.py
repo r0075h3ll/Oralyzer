@@ -1,6 +1,6 @@
-good = "\033[92m[•]\033[00m"
-bad = "\033[91m[•]\033[00m"
-info = "\033[93m[•]\033[00m"
+good = "\033[92m[+]\033[00m"
+bad = "\033[91m[-]\033[00m"
+info = "\033[93m[!]\033[00m"
 
 import requests,random
 from urllib.parse import parse_qs,urlparse,urlunparse
@@ -21,50 +21,44 @@ request = requests.Session()
 
 def requester(url,proxy,parameters=''):
     if proxy:
-        webpage = request.get(url, allow_redirects=False, headers=header, proxies=proxies, verify=False ,timeout=30, params=parameters)
+        webOBJ = request.get(url, allow_redirects=False, headers=header, proxies=proxies, verify=False ,timeout=30, params=parameters)
     else:
-        webpage = request.get(url, allow_redirects=False, headers=header, timeout=10, verify=False, params=parameters)
+        webOBJ = request.get(url, allow_redirects=False, headers=header, timeout=10, verify=False, params=parameters)
 
-    return webpage
+    return webOBJ
 
-def multitest(url,PayloadPath="payloads.txt"):
-    if urlparse(url).scheme == '':
-        url = 'http://' + url
-    if type(PayloadPath) is list:
-        payloads = PayloadPath
-    else:
-        payloads = open(PayloadPath, encoding='utf-8').read().splitlines()
+def multitest(url,payloadFileList):
+    if urlparse(url).scheme == '': url = 'http://' + url
 
-    if '=' in url:
-        if url.endswith('='):
-            url += 'r007'
+    payloads = payloadFileList
 
-        QueryParsed = parse_qs(urlparse(url).query)
-        Keys = [i for i in QueryParsed]
-        Values = [i for i in QueryParsed.values()]
+    if '=' in url and url.endswith('='):
+        url += 'r007'
+        parsedQueries = parse_qs(urlparse(url).query)
+        keys = [key for key in parsedQueries]
+        values = [value for value in parsedQueries.values()]
 
-        ParsedUrl = list(urlparse(url))
-        ParsedUrl[-2] = ''
-        ModifiedUrl = urlunparse(ParsedUrl)
+        parsedURL = list(urlparse(url))
+        parsedURL[-2] = ''
+        modifiedURL = urlunparse(parsedURL)
 
-        QueryList = []
+        queries = []
         count = 0
-        for key in Keys:
+        for key in keys:
             for payload in payloads:
-                QueryParsed[key] = payload
-                QueryList.append(QueryParsed.copy())
+                parsedQueries[key] = payload
+                queries.append(parsedQueries.copy())
 
-            QueryParsed[key] = Values[count]
+            parsedQueries[key] = values[count]
             count += 1
-        return QueryList,ModifiedUrl
+        return queries,modifiedURL
     else:
-        UrlList = []
+        urls = []
         print('%s Appending payloads just after the URL' % info)
-        if url.endswith('/')==True:
-            pass
-        elif url.endswith('/')==False:
-            url = url+'/'
+        if not url.endswith('/'):
+            url += '/'
+            
         for payload in payloads:
-            UrlList.append(url+payload)
+            urls.append(url+payload)
 
-        return UrlList
+        return urls
