@@ -8,7 +8,8 @@ print('''\033[92m   ____           __
 \033[00m''')
 arrow = '\033[91m->\033[00m'
 #----------------------------------------------------------#
-import sys
+import sys,os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 if sys.version_info.major > 2 and sys.version_info.minor > 6:
     pass
 else:
