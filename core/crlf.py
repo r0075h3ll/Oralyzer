@@ -57,7 +57,7 @@ def request(URI,foxy,params=''):
         print("%s Connection Error" % bad)
         return True
 
-    funcBreak = basicChecks(respOBJ,respOBJ.request.url)
+    basicChecks(respOBJ,respOBJ.request.url)
 
 def basicChecks(respOBJ,url):
     googles = ["https://www.google.com", "http://www.google.com", "google.com", "www.google.com"] 
