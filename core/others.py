@@ -32,8 +32,8 @@ def multitest(url,payloadFileList):
 
     payloads = payloadFileList
 
-    if '=' in url and url.endswith('='):
-        url += 'r007'
+    if '=' in url:
+        if url.endswith('='): url += 'r007'
         parsedQueries = parse_qs(urlparse(url).query)
         keys = [key for key in parsedQueries]
         values = [value for value in parsedQueries.values()]
