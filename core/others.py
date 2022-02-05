@@ -16,7 +16,7 @@ user = ['Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Ge
 'Mozilla/5.0 (PlayStation 4 5.01) AppleWebKit/601.2 (KHTML, like Gecko)']
 
 header = {'User-Agent': random.choice(user)}
-proxies = {"http":"http://127.0.0.1:8000", "https":"http://127.0.0.1:8000" }
+proxies = {"http":"http://127.0.0.1:8000", "https":"http://127.0.0.1:8000" } #configure the proxy before using
 request = requests.Session()
 
 def requester(url,proxy,parameters=''):
@@ -27,11 +27,18 @@ def requester(url,proxy,parameters=''):
 
     return webOBJ
 
-def multitest(url,payloadFileList):
+def generator(url,payloads):
+    root = urlparse(url).netloc
+    regPay = []
+    for payload in payloads:
+        regPay.append("{}.{}".format(payload,root))
+        regPay.append("{}/{}".format(payload,root))
+    return regPay
+
+def multitest(url,payloads):
     if urlparse(url).scheme == '': url = 'http://' + url
 
-    payloads = payloadFileList
-
+    regexBypassPayloads = generator(url,payloads)
     if '=' in url:
         if url.endswith('='): url += 'r007'
         parsedQueries = parse_qs(urlparse(url).query)
@@ -40,7 +47,7 @@ def multitest(url,payloadFileList):
 
         parsedURL = list(urlparse(url))
         parsedURL[-2] = ''
-        modifiedURL = urlunparse(parsedURL)
+        finalURL = urlunparse(parsedURL)
 
         queries = []
         count = 0
@@ -49,9 +56,13 @@ def multitest(url,payloadFileList):
                 parsedQueries[key] = payload
                 queries.append(parsedQueries.copy())
 
+            for payload in regexBypassPayloads:
+                parsedQueries[key] = payload
+                queries.append(parsedQueries.copy())
+
             parsedQueries[key] = values[count]
             count += 1
-        return queries,modifiedURL
+        return queries,finalURL
     else:
         urls = []
         print('%s Appending payloads just after the URL' % info)
@@ -61,4 +72,6 @@ def multitest(url,payloadFileList):
         for payload in payloads:
             urls.append(url+payload)
 
+        for payload in regexBypassPayloads:
+            urls.append(url+payload)
         return urls

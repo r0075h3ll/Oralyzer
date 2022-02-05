@@ -51,7 +51,7 @@ def request(URI,foxy,params=''):
     try:
         respOBJ = requester(URI,foxy,params)
     except requests.exceptions.Timeout:
-        print("[\033[91mTimeout\033[00m] %s" % url)
+        print("[\033[91mTimeout\033[00m] %s" % URI)
         return True
     except requests.exceptions.ConnectionError:
         print("%s Connection Error" % bad)
@@ -62,7 +62,7 @@ def request(URI,foxy,params=''):
 def basicChecks(respOBJ,url):
     googles = ["https://www.google.com", "http://www.google.com", "google.com", "www.google.com"] 
 
-    if respOBJ.headers.get('Location') in googles or respOBJ.headers.get(' Set-Cookie') == "name=ch33ms;":
+    if respOBJ.headers.get('Location') in googles or respOBJ.headers.get('Set-Cookie') == "name=ch33ms;":
         print("%s HTTP Response Splitting found" % good)
         print("%s Payload : %s" % (info, payloads[payloadIndexCounter]))
 

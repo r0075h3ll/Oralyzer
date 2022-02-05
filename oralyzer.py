@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 #https://twitter.com/r0075h3ll
-print('''\033[92m   ____           __
-  / __ \_______ _/ /_ _____ ___ ____
- / /_/ / __/ _ `/ / // /_ // -_) __/
- \____/_/  \_,_/_/\_, //__/\__/_/
-                 /___/
-\033[00m''')
+print("\033[91m\n\tOralyzer\033[00m\n")
 arrow = '\033[91m->\033[00m'
 #----------------------------------------------------------#
-import sys,os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sys
 if sys.version_info.major > 2 and sys.version_info.minor > 6:
     pass
 else:
@@ -25,29 +19,26 @@ warnings.filterwarnings('ignore')
 ssl._create_default_https_context = ssl._create_unverified_context
 #----------------------------------------------------------------------------------#
 parser = argparse.ArgumentParser()
-parser.add_argument('-u', '--url', help='scan single target', dest="url")
-parser.add_argument('-l', '--list', help='scan multiple target', dest='path')
+parser.add_argument('-u', help='scan single target', dest="url")
+parser.add_argument('-l', help='scan multiple targets from a file', dest='path')
 parser.add_argument('-crlf', help='scan for CRLF Injection', action='store_true', dest='crlf')
-parser.add_argument('-p', '--payload', help='use payloads from a file', dest='payload')
+parser.add_argument('-p', help='use payloads from a file', dest="payload", default="payloads.txt")
 parser.add_argument('--proxy', help='use proxy', action='store_true' , dest='proxy')
 parser.add_argument('--wayback', help='fetch URLs from archive.org', action="store_true", dest='waybacks')
 args = parser.parse_args()
 url = args.url
 
-if (args.payload and (args.crlf or args.waybacks)): print("%s '-p' can't be used with '-crlf' or '--wayback'" % bad), exit()
+if ((args.payload != "payloads.txt") and (args.crlf or args.waybacks)): print("%s '-p' can't be used with '-crlf' or '--wayback'" % bad), exit()
 #-------------------------------------------------------#
 if not (args.url or args.path):
     print('Made by \033[1mr0075h3ll\033[00m')
-    parser.print_help()
+    print(parser.format_help().lower())
 #--------------------------------------------------------#
 if not args.crlf and not args.waybacks:
     try:
-        if args.payload:
-            file = open(args.payload, encoding='utf-8').read().splitlines()
-        else:
-            file = open('payloads.txt', encoding='utf-8').read().splitlines()
+        file = open(args.payload, encoding='utf-8').read().splitlines()
     except FileNotFoundError:
-        print("%s Payload file not found! Try using '-p' flag to use payload file of your choice" % bad)
+        print("%s Payload file not found" % bad)
         exit()
 
 if args.path:
@@ -263,9 +254,9 @@ try:
 
         elif args.waybacks and not args.crlf:
             print("%s Getting juicy URLs from archive.org" % info)
-            getURLs(url, "wayback_urls.txt")
+            getURLs(url, "wayback_data.txt")
 
-        elif not (args.crlf or args.waybacks):
+        elif not (args.crlf and args.waybacks):
             analyze(url)
     
     elif args.path:
@@ -279,10 +270,10 @@ try:
             print("%s Getting juicy URLs from archive.org" % info)
             for url in urls:
                 print("%s URL: %s" % (info, url))
-                getURLs(url, "wayback-%d.txt" % random.randint(0,100))
+                getURLs(url, "wayback_%d.txt" % random.randint(0,1000))
                 print("\n")
 
-        elif not (args.crlf or args.waybacks):
+        elif not (args.crlf and args.waybacks):
             for url in urls:
                 print("%s Target: \033[92m%s\033[00m" % (info, url))
                 analyze(url)
