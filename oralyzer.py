@@ -15,6 +15,8 @@ from core.wayback import getURLs
 from core.crlf import crlfScan
 from core.others import good,bad,info,requester,multitest,urlparse
 from bs4 import BeautifulSoup
+import collections
+collections.Callable = collections.abc.Callable
 warnings.filterwarnings('ignore')
 ssl._create_default_https_context = ssl._create_unverified_context
 #----------------------------------------------------------------------------------#
