@@ -56,5 +56,6 @@ def fetcher(url):
         result = requester("https://web.archive.org/cdx/search/cdx?url=%s*&output=json&collapse=urlkey&filter=statuscode:200&limit=1000from=%d&to=%d" % (url, fromdate, todate), False)
         jsonOutput = json.loads(result.text)
 
-        for output in range(1, 1000, 1):
+
+        for output in range(1, min(len(jsonOutput), 1000), 1):
             urls.append(unquote(jsonOutput[output][2]))
