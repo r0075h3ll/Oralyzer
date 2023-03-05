@@ -64,18 +64,23 @@ def analyze(url):
                 break
 #--------------------------------------------------------#
 def request(URI,params=''):
+    page = ''
     try:
         page = requester(URI,args.proxy,params)
     except requests.exceptions.Timeout:
         print("[\033[91mTimeout\033[00m] %s" % url)
-        return True
+
     except requests.exceptions.ConnectionError:
         print("%s Connection Error" % bad)
+
+    if page:
+        funcBreak = check(page, page.request.url)
+    else:
+        return
+
+    if funcBreak:
         return True
 
-    funcBreak = check(page, page.request.url)
-    if funcBreak:
-        return True                
 #--------------------------------------------------------------------#
 def check(respOBJ,finalURL):
     payload = "|".join([re.escape(i) for i in file])
@@ -240,7 +245,8 @@ def check(respOBJ,finalURL):
         elif "http-equiv=\"refresh\"" in str(respOBJ.text) and not metaTagSearch:
             print("%s The page is only getting refreshed" % bad)
             return True
-
+        else:
+            print("%s No redirect" % bad)
 #-------------------------------------------------------------------------------------#
     elif respOBJ.status_code in errorCodes:
         print("%s %s [\033[91m%s\033[00m]" % (bad,finalURL,respOBJ.status_code))
