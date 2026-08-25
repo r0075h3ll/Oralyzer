@@ -1,4 +1,4 @@
-import subprocess,re,json,requests
+import re,json,requests
 from core.others import good,bad,info,requester
 from urllib.parse import unquote
 import datetime
