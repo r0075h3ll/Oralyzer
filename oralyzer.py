@@ -3,17 +3,10 @@
 print("\033[91m\n\tOralyzer\033[00m\n")
 arrow = '\033[91m->\033[00m'
 #----------------------------------------------------------#
-import sys
-if sys.version_info.major > 2 and sys.version_info.minor > 6:
-    pass
-else:
-    print("%s Oralyzer requires atleast Python 3.7.x to run." % bad)
-    exit()
-#---------------------------------------------------------#
 import argparse,re,random,warnings,ssl,requests,os,json
 from core.wayback import getURLs
 from core.crlf import crlfScan
-from core.others import good,bad,info,requester,multitest,urlparse,results
+from core.others import good,bad,info,requester,multitest,results
 from bs4 import BeautifulSoup
 warnings.filterwarnings('ignore')
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -88,8 +81,8 @@ def request(URI,params='',payload=''):
 #--------------------------------------------------------------------#
 def check(respOBJ,finalURL,payload=''):
     payloadRegex = "|".join([re.escape(i) for i in file])
-    redirectCodes = [red for red in range(300,311,1)]
-    errorCodes = [error for error in range(400, 411, 1)]
+    redirectCodes = range(300, 311)
+    errorCodes = range(400, 411)
     soup = BeautifulSoup(respOBJ.text,'html.parser')
     google = re.search(payloadRegex, str(soup.find_all("script")), re.IGNORECASE)
     metas = str(soup.find_all('meta'))
