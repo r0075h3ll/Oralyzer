@@ -10,7 +10,7 @@ else:
     print("%s Oralyzer requires atleast Python 3.7.x to run." % bad)
     exit()
 #---------------------------------------------------------#
-import argparse,re,random,warnings,ssl,requests
+import argparse,re,random,warnings,ssl,requests,os
 from core.wayback import getURLs
 from core.crlf import crlfScan
 from core.others import good,bad,info,requester,multitest,urlparse
@@ -20,6 +20,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 #----------------------------------------------------------------------------------#
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', help='scan single target', dest="url")
+parser.add_argument('-o', help='export path', dest="export")
 parser.add_argument('-l', help='scan multiple targets from a file', dest='path')
 parser.add_argument('-crlf', help='scan for CRLF Injection', action='store_true', dest='crlf')
 parser.add_argument('-p', help='use payloads from a file', dest="payload", default="payloads.txt")
@@ -46,10 +47,20 @@ if args.path:
         urls = open(args.path, encoding='utf-8').read().splitlines()
     except FileNotFoundError: print("%s Target file not found" % bad), exit()
 #-------------------------------------------------------#
+if args.export:
+    if os.path.exists(args.export):
+        open(args.export, 'w').close() # erase the content of the file
+    outputFile = open(args.export, "a+")
+else:
+    outputFile = None
+
 def analyze(url):
     multiTestCall = multitest(url,file)
 
     print('%s Infusing payloads' % info)
+    if outputFile is not None:
+        outputFile.write('Infusing payloads\n')
+
     if type(multiTestCall) == tuple:
         for params in multiTestCall[0]:
             testingBreak = request(multiTestCall[1],params)
@@ -217,34 +228,51 @@ def check(respOBJ,finalURL):
     if respOBJ.status_code in redirectCodes:
         if metaTagSearch and "http-equiv=\"refresh\"" in metas:
             print("%s Meta Tag Redirection" % good)
+            if outputFile is not None:
+                outputFile.write("%s Meta Tag Redirection\n" % "[+]")
             return True
             
         else:
             print("%s Header Based Redirection : %s %s  %s" % (good,finalURL,arrow,respOBJ.headers['Location']))
+            if outputFile is not None:
+                outputFile.write("%s Header Based Redirection : %s %s  %s\n" % ("[+]",finalURL,"->",respOBJ.headers['Location']))
 
     elif respOBJ.status_code==200:
         if google:
 #---------------------------------------------------------------------------------------------#
             print("%s Javascript Based Redirection" % good)
+            if outputFile is not None:
+                outputFile.write("%s Javascript Based Redirection\n" % "[+]")
+
             if sourcesMatch != None:
                 print("%s Potentially Vulnerable Source/Sink(s) Found: \033[1m%s\033[00m" % (good, " ".join(sourcesMatch)))
+                if outputFile is not None:
+                    outputFile.write("%s Potentially Vulnerable Source/Sink(s) Found: \033[1m%s\033[00m\n" % ("[+]", " ".join(sourcesMatch)))
             return True
 
 #------------------------------------------------------------------------------------#
         if metaTagSearch and "http-equiv=\"refresh\"" in str(respOBJ.text):
             print("%s Meta Tag Redirection" % good)
+            if outputFile is not None:
+                outputFile.write("%s Meta Tag Redirection\n" % "[+]")
             return True
 
         elif "http-equiv=\"refresh\"" in str(respOBJ.text) and not metaTagSearch:
             print("%s The page is only getting refreshed" % bad)
+            if outputFile is not None:
+                outputFile.write("%s The page is only getting refreshed\n" % "[-]")
             return True
 
 #-------------------------------------------------------------------------------------#
     elif respOBJ.status_code in errorCodes:
         print("%s %s [\033[91m%s\033[00m]" % (bad,finalURL,respOBJ.status_code))
+        if outputFile is not None:
+            outputFile.write("%s %s %s\n" % ("[-]",finalURL,respOBJ.status_code))
 
     else:
         print("%s Found nothing :: %s" % (bad,finalURL))
+        if outputFile is not None:
+            outputFile.write("%s Found nothing :: %s\n" % ("[-]",finalURL))
 
 #-------------------------------------------------------------------------------------------------------------------------------#
 try:
@@ -279,6 +307,13 @@ try:
                 analyze(url)
                 print("\n")
 
+    if outputFile is not None:
+        if not outputFile.closed:
+            outputFile.close()
+
 except KeyboardInterrupt:
     print("\nQuitting...")
+    if outputFile is not None:
+        if not outputFile.closed:
+            outputFile.close()
     exit()
