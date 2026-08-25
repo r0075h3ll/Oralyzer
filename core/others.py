@@ -18,6 +18,7 @@ user = ['Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Ge
 header = {'User-Agent': random.choice(user)}
 proxies = {"http":"http://127.0.0.1:8000", "https":"http://127.0.0.1:8000" } #configure the proxy before using
 request = requests.Session()
+results = []
 
 def requester(url,proxy,parameters=''):
     if proxy:
@@ -50,28 +51,34 @@ def multitest(url,payloads):
         finalURL = urlunparse(parsedURL)
 
         queries = []
+        sent = []
         count = 0
         for key in keys:
             for payload in payloads:
                 parsedQueries[key] = payload
                 queries.append(parsedQueries.copy())
+                sent.append(payload)
 
             for payload in regexBypassPayloads:
                 parsedQueries[key] = payload
                 queries.append(parsedQueries.copy())
+                sent.append(payload)
 
             parsedQueries[key] = values[count]
             count += 1
-        return queries,finalURL
+        return queries,sent,finalURL
     else:
         urls = []
+        sent = []
         print('%s Appending payloads just after the URL' % info)
         if not url.endswith('/'):
             url += '/'
-            
+
         for payload in payloads:
             urls.append(url+payload)
+            sent.append(payload)
 
         for payload in regexBypassPayloads:
             urls.append(url+payload)
-        return urls
+            sent.append(payload)
+        return [urls,sent]
