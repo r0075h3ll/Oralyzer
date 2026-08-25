@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 #https://twitter.com/r0075h3ll
-print("\033[91m\n\tOralyzer\033[00m\n")
 arrow = '\033[91m->\033[00m'
 #----------------------------------------------------------#
 import argparse,re,random,warnings,ssl,requests,os,json
@@ -10,42 +9,16 @@ from core.others import good,bad,info,requester,multitest,results
 from bs4 import BeautifulSoup
 warnings.filterwarnings('ignore')
 ssl._create_default_https_context = ssl._create_unverified_context
+DEFAULT_PAYLOAD = os.path.join(os.path.dirname(os.path.realpath(__file__)), "core", "payloads.txt")
 #----------------------------------------------------------------------------------#
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', help='scan single target', dest="url")
 parser.add_argument('-o', help='export path', dest="export")
 parser.add_argument('-l', help='scan multiple targets from a file', dest='path')
 parser.add_argument('-crlf', help='scan for CRLF Injection', action='store_true', dest='crlf')
-parser.add_argument('-p', help='use payloads from a file', dest="payload", default="payloads.txt")
+parser.add_argument('-p', help='use payloads from a file', dest="payload", default=DEFAULT_PAYLOAD)
 parser.add_argument('--proxy', help='use proxy', action='store_true' , dest='proxy')
 parser.add_argument('--wayback', help='fetch URLs from archive.org', action="store_true", dest='waybacks')
-args = parser.parse_args()
-url = args.url
-
-if ((args.payload != "payloads.txt") and (args.crlf or args.waybacks)): print("%s '-p' can't be used with '-crlf' or '--wayback'" % bad), exit()
-#-------------------------------------------------------#
-if not (args.url or args.path):
-    print('Made by \033[1mr0075h3ll\033[00m')
-    print(parser.format_help().lower())
-#--------------------------------------------------------#
-if not args.crlf and not args.waybacks:
-    try:
-        file = open(args.payload, encoding='utf-8').read().splitlines()
-    except FileNotFoundError:
-        print("%s Payload file not found" % bad)
-        exit()
-
-if args.path:
-    try:
-        urls = open(args.path, encoding='utf-8').read().splitlines()
-    except FileNotFoundError: print("%s Target file not found" % bad), exit()
-#-------------------------------------------------------#
-if args.export:
-    if os.path.exists(args.export):
-        open(args.export, 'w').close() # erase the content of the file
-    outputFile = open(args.export, "a+")
-else:
-    outputFile = None
 
 def analyze(url):
     multiTestCall = multitest(url,file)
@@ -264,39 +237,73 @@ def saveResults():
         json.dump(results, outputFile, indent=2)
         outputFile.close()
 
-try:
-    if args.url:
-        if args.crlf and not args.waybacks:
-            crlfScan(url, args.proxy)
+def main():
+    global args, url, file, outputFile
+    print("\033[91m\n\tOralyzer\033[00m\n")
+    args = parser.parse_args()
+    url = args.url
 
-        elif args.waybacks and not args.crlf:
-            print("%s Getting juicy URLs from archive.org" % info)
-            results.extend({"type":"wayback","target":url,"found_url":u} for u in getURLs(url, "wayback_data.txt"))
+    if ((args.payload != DEFAULT_PAYLOAD) and (args.crlf or args.waybacks)): print("%s '-p' can't be used with '-crlf' or '--wayback'" % bad), exit()
+    #-------------------------------------------------------#
+    if not (args.url or args.path):
+        print('Made by \033[1mr0075h3ll\033[00m')
+        print(parser.format_help().lower())
+    #--------------------------------------------------------#
+    if not args.crlf and not args.waybacks:
+        try:
+            file = open(args.payload, encoding='utf-8').read().splitlines()
+        except FileNotFoundError:
+            print("%s Payload file not found" % bad)
+            exit()
 
-        elif not (args.crlf and args.waybacks):
-            analyze(url)
+    if args.path:
+        try:
+            urls = open(args.path, encoding='utf-8').read().splitlines()
+        except FileNotFoundError: print("%s Target file not found" % bad), exit()
+    #-------------------------------------------------------#
+    if args.export:
+        if os.path.exists(args.export):
+            open(args.export, 'w').close() # erase the content of the file
+        outputFile = open(args.export, "a+")
+    else:
+        outputFile = None
 
-    elif args.path:
-        if args.crlf and not args.waybacks:
-            for url in urls:
-                print("%s Target: %s" % (info, url))
-                crlfScan(url,args.proxy)
-                print("\n")
+    try:
+        if args.url:
+            if args.crlf and not args.waybacks:
+                crlfScan(url, args.proxy)
 
-        elif args.waybacks and not args.crlf:
-            print("%s Getting juicy URLs from archive.org" % info)
-            for url in urls:
-                print("%s URL: %s" % (info, url))
-                results.extend({"type":"wayback","target":url,"found_url":u} for u in getURLs(url, "wayback_%d.txt" % random.randint(0,1000)))
-                print("\n")
+            elif args.waybacks and not args.crlf:
+                print("%s Getting juicy URLs from archive.org" % info)
+                results.extend({"type":"wayback","target":url,"found_url":u} for u in getURLs(url, "wayback_data.txt"))
 
-        elif not (args.crlf and args.waybacks):
-            for url in urls:
-                print("%s Target: \033[92m%s\033[00m" % (info, url))
+            elif not (args.crlf and args.waybacks):
                 analyze(url)
-                print("\n")
 
-except KeyboardInterrupt:
-    print("\nQuitting...")
-finally:
-    saveResults()
+        elif args.path:
+            if args.crlf and not args.waybacks:
+                for url in urls:
+                    print("%s Target: %s" % (info, url))
+                    crlfScan(url,args.proxy)
+                    print("\n")
+
+            elif args.waybacks and not args.crlf:
+                print("%s Getting juicy URLs from archive.org" % info)
+                for url in urls:
+                    print("%s URL: %s" % (info, url))
+                    results.extend({"type":"wayback","target":url,"found_url":u} for u in getURLs(url, "wayback_%d.txt" % random.randint(0,1000)))
+                    print("\n")
+
+            elif not (args.crlf and args.waybacks):
+                for url in urls:
+                    print("%s Target: \033[92m%s\033[00m" % (info, url))
+                    analyze(url)
+                    print("\n")
+
+    except KeyboardInterrupt:
+        print("\nQuitting...")
+    finally:
+        saveResults()
+
+if __name__ == "__main__":
+    main()
