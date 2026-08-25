@@ -81,4 +81,4 @@ def multitest(url,payloads):
         for payload in regexBypassPayloads:
             urls.append(url+payload)
             sent.append(payload)
-        return urls,sent
+        return [urls,sent]

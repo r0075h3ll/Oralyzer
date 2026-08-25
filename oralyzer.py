@@ -233,8 +233,9 @@ def check(respOBJ,finalURL,payload=''):
             return True
 
         else:
-            print("%s Header Based Redirection : %s %s  %s" % (good,finalURL,arrow,respOBJ.headers['Location']))
-            results.append({"type":"header","request_url":finalURL,"payload":payload,"status_code":respOBJ.status_code,"destination":respOBJ.headers['Location']})
+            location = respOBJ.headers.get('Location')
+            print("%s Header Based Redirection : %s %s  %s" % (good,finalURL,arrow,location))
+            results.append({"type":"header","request_url":finalURL,"payload":payload,"status_code":respOBJ.status_code,"destination":location})
 
     elif respOBJ.status_code==200:
         if google:
