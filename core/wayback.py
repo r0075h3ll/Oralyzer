@@ -32,6 +32,8 @@ matchedURLs = []
 def getURLs(url, path):
 
     file = open(path,"w", encoding='utf-8')
+    urls.clear()
+    matchedURLs.clear()
     fetcher(url)
 
     for url in urls:
@@ -40,7 +42,7 @@ def getURLs(url, path):
             print("%s %s" % (good,match.group()))
             matchedURLs.append(match.group())
         except AttributeError:
-            continue 
+            continue
 
     if len(matchedURLs) > 0:
         for matches in matchedURLs:
@@ -48,6 +50,8 @@ def getURLs(url, path):
 
     else:
         print("%s No juicy URLs found" % bad)
+
+    return list(matchedURLs)
 
 def fetcher(url):
         #----------------------wayback-------------------------#

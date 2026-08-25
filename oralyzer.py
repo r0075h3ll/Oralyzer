@@ -10,10 +10,10 @@ else:
     print("%s Oralyzer requires atleast Python 3.7.x to run." % bad)
     exit()
 #---------------------------------------------------------#
-import argparse,re,random,warnings,ssl,requests,os
+import argparse,re,random,warnings,ssl,requests,os,json
 from core.wayback import getURLs
 from core.crlf import crlfScan
-from core.others import good,bad,info,requester,multitest,urlparse
+from core.others import good,bad,info,requester,multitest,urlparse,results
 from bs4 import BeautifulSoup
 warnings.filterwarnings('ignore')
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -58,21 +58,21 @@ def analyze(url):
     multiTestCall = multitest(url,file)
 
     print('%s Infusing payloads' % info)
-    if outputFile is not None:
-        outputFile.write('Infusing payloads\n')
 
     if type(multiTestCall) == tuple:
-        for params in multiTestCall[0]:
-            testingBreak = request(multiTestCall[1],params)
+        queries,sent,base = multiTestCall
+        for params,payload in zip(queries,sent):
+            testingBreak = request(base,params,payload)
             if testingBreak:
                 break
     else:
-        for url in multiTestCall:
-            testingBreak = request(url)
+        urls,sent = multiTestCall
+        for url,payload in zip(urls,sent):
+            testingBreak = request(url,'',payload)
             if testingBreak:
                 break
 #--------------------------------------------------------#
-def request(URI,params=''):
+def request(URI,params='',payload=''):
     try:
         page = requester(URI,args.proxy,params)
     except requests.exceptions.Timeout:
@@ -82,18 +82,18 @@ def request(URI,params=''):
         print("%s Connection Error" % bad)
         return True
 
-    funcBreak = check(page, page.request.url)
+    funcBreak = check(page, page.request.url, payload)
     if funcBreak:
-        return True                
+        return True
 #--------------------------------------------------------------------#
-def check(respOBJ,finalURL):
-    payload = "|".join([re.escape(i) for i in file])
+def check(respOBJ,finalURL,payload=''):
+    payloadRegex = "|".join([re.escape(i) for i in file])
     redirectCodes = [red for red in range(300,311,1)]
     errorCodes = [error for error in range(400, 411, 1)]
     soup = BeautifulSoup(respOBJ.text,'html.parser')
-    google = re.search(payload, str(soup.find_all("script")), re.IGNORECASE)
+    google = re.search(payloadRegex, str(soup.find_all("script")), re.IGNORECASE)
     metas = str(soup.find_all('meta'))
-    metaTagSearch = re.search(payload, metas, re.IGNORECASE)
+    metaTagSearch = re.search(payloadRegex, metas, re.IGNORECASE)
 
     sourcesSinks = [  
                 "location.href",
@@ -228,53 +228,48 @@ def check(respOBJ,finalURL):
     if respOBJ.status_code in redirectCodes:
         if metaTagSearch and "http-equiv=\"refresh\"" in metas:
             print("%s Meta Tag Redirection" % good)
-            if outputFile is not None:
-                outputFile.write("%s Meta Tag Redirection\n" % "[+]")
+            metaURL = re.search(r'url=([^"\']+)', metas, re.IGNORECASE)
+            results.append({"type":"meta","request_url":finalURL,"payload":payload,"status_code":respOBJ.status_code,"destination":metaURL.group(1) if metaURL else ""})
             return True
-            
+
         else:
             print("%s Header Based Redirection : %s %s  %s" % (good,finalURL,arrow,respOBJ.headers['Location']))
-            if outputFile is not None:
-                outputFile.write("%s Header Based Redirection : %s %s  %s\n" % ("[+]",finalURL,"->",respOBJ.headers['Location']))
+            results.append({"type":"header","request_url":finalURL,"payload":payload,"status_code":respOBJ.status_code,"destination":respOBJ.headers['Location']})
 
     elif respOBJ.status_code==200:
         if google:
 #---------------------------------------------------------------------------------------------#
             print("%s Javascript Based Redirection" % good)
-            if outputFile is not None:
-                outputFile.write("%s Javascript Based Redirection\n" % "[+]")
+            results.append({"type":"javascript","request_url":finalURL,"payload":payload,"status_code":respOBJ.status_code,"sources":sourcesMatch})
 
             if sourcesMatch != None:
                 print("%s Potentially Vulnerable Source/Sink(s) Found: \033[1m%s\033[00m" % (good, " ".join(sourcesMatch)))
-                if outputFile is not None:
-                    outputFile.write("%s Potentially Vulnerable Source/Sink(s) Found: \033[1m%s\033[00m\n" % ("[+]", " ".join(sourcesMatch)))
             return True
 
-#------------------------------------------------------------------------------------#
+#---------------------------------------------------------------------------------------------#
         if metaTagSearch and "http-equiv=\"refresh\"" in str(respOBJ.text):
             print("%s Meta Tag Redirection" % good)
-            if outputFile is not None:
-                outputFile.write("%s Meta Tag Redirection\n" % "[+]")
+            metaURL = re.search(r'url=([^"\']+)', str(respOBJ.text), re.IGNORECASE)
+            results.append({"type":"meta","request_url":finalURL,"payload":payload,"status_code":respOBJ.status_code,"destination":metaURL.group(1) if metaURL else ""})
             return True
 
         elif "http-equiv=\"refresh\"" in str(respOBJ.text) and not metaTagSearch:
             print("%s The page is only getting refreshed" % bad)
-            if outputFile is not None:
-                outputFile.write("%s The page is only getting refreshed\n" % "[-]")
             return True
 
 #-------------------------------------------------------------------------------------#
     elif respOBJ.status_code in errorCodes:
         print("%s %s [\033[91m%s\033[00m]" % (bad,finalURL,respOBJ.status_code))
-        if outputFile is not None:
-            outputFile.write("%s %s %s\n" % ("[-]",finalURL,respOBJ.status_code))
 
     else:
         print("%s Found nothing :: %s" % (bad,finalURL))
-        if outputFile is not None:
-            outputFile.write("%s Found nothing :: %s\n" % ("[-]",finalURL))
 
 #-------------------------------------------------------------------------------------------------------------------------------#
+def saveResults():
+    if outputFile is not None and not outputFile.closed:
+        json.dump(results, outputFile, indent=2)
+        outputFile.close()
+
 try:
     if args.url:
         if args.crlf and not args.waybacks:
@@ -282,11 +277,11 @@ try:
 
         elif args.waybacks and not args.crlf:
             print("%s Getting juicy URLs from archive.org" % info)
-            getURLs(url, "wayback_data.txt")
+            results.extend({"type":"wayback","target":url,"found_url":u} for u in getURLs(url, "wayback_data.txt"))
 
         elif not (args.crlf and args.waybacks):
             analyze(url)
-    
+
     elif args.path:
         if args.crlf and not args.waybacks:
             for url in urls:
@@ -298,7 +293,7 @@ try:
             print("%s Getting juicy URLs from archive.org" % info)
             for url in urls:
                 print("%s URL: %s" % (info, url))
-                getURLs(url, "wayback_%d.txt" % random.randint(0,1000))
+                results.extend({"type":"wayback","target":url,"found_url":u} for u in getURLs(url, "wayback_%d.txt" % random.randint(0,1000)))
                 print("\n")
 
         elif not (args.crlf and args.waybacks):
@@ -307,13 +302,7 @@ try:
                 analyze(url)
                 print("\n")
 
-    if outputFile is not None:
-        if not outputFile.closed:
-            outputFile.close()
-
 except KeyboardInterrupt:
     print("\nQuitting...")
-    if outputFile is not None:
-        if not outputFile.closed:
-            outputFile.close()
-    exit()
+finally:
+    saveResults()

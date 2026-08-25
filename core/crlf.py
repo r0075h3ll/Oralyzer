@@ -1,4 +1,4 @@
-from core.others import good,bad,info,requester,proxies,requests,multitest
+from core.others import good,bad,info,requester,proxies,requests,multitest,results
 redirectCodes = [i for i in range(300,311,1)]
 errorCodes = [error for error in range(400, 411, 1)]
 payloads = [
@@ -30,24 +30,21 @@ payloads = [
             ]
 #---------------------------------------------------------------------#
 def crlfScan(url,foxy):
-    global payloadIndexCounter
-    payloadIndexCounter = 0
-
     paramUrlTuple = multitest(url,payloads)
     if type(paramUrlTuple) is tuple:
-        for params in paramUrlTuple[0]:
-            testingBreak = request(paramUrlTuple[1],foxy,params)
-            payloadIndexCounter += 1
+        queries,sent,base = paramUrlTuple
+        for params,payload in zip(queries,sent):
+            testingBreak = request(base,foxy,params,payload)
             if testingBreak:
                 break
     else:
-        for url in paramUrlTuple:
-            testingBreak = request(url,foxy)
-            payloadIndexCounter += 1
+        urls,sent = paramUrlTuple
+        for url,payload in zip(urls,sent):
+            testingBreak = request(url,foxy,'',payload)
             if testingBreak:
                 break
 
-def request(URI,foxy,params=''):
+def request(URI,foxy,params='',payload=''):
     try:
         respOBJ = requester(URI,foxy,params)
     except requests.exceptions.Timeout:
@@ -57,14 +54,15 @@ def request(URI,foxy,params=''):
         print("%s Connection Error" % bad)
         return True
 
-    basicChecks(respOBJ,respOBJ.request.url)
+    basicChecks(respOBJ,respOBJ.request.url,payload)
 
-def basicChecks(respOBJ,url):
-    googles = ["https://www.google.com", "http://www.google.com", "google.com", "www.google.com"] 
+def basicChecks(respOBJ,url,payload=''):
+    googles = ["https://www.google.com", "http://www.google.com", "google.com", "www.google.com"]
 
     if respOBJ.headers.get('Location') in googles or respOBJ.headers.get('Set-Cookie') == "name=ch33ms;":
         print("%s HTTP Response Splitting found" % good)
-        print("%s Payload : %s" % (info, payloads[payloadIndexCounter]))
+        print("%s Payload : %s" % (info, payload))
+        results.append({"type":"crlf","payload":payload,"status_code":respOBJ.status_code,"request_url":url,"destination":respOBJ.headers.get('Location')})
 
     elif respOBJ.status_code in errorCodes:
         print("%s %s [\033[91m%s\033[00m]" % (bad,url,respOBJ.status_code))
