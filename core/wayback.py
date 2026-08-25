@@ -57,9 +57,15 @@ def fetcher(url):
         #----------------------wayback-------------------------#
         todate = datetime.date.today().year
         fromdate = todate - 2
-        result = requester("https://web.archive.org/cdx/search/cdx?url=%s*&output=json&collapse=urlkey&filter=statuscode:200&limit=1000from=%d&to=%d" % (url, fromdate, todate), False)
-        jsonOutput = json.loads(result.text)
+        result = requester("https://web.archive.org/cdx/search/cdx?url=%s*&output=json&collapse=urlkey&filter=statuscode:200&limit=1000&from=%d&to=%d" % (url, fromdate, todate), False)
+        try:
+            jsonOutput = json.loads(result.text)
+        except ValueError:
+            return
 
+        if not isinstance(jsonOutput, list):
+            return
 
-        for output in range(1, min(len(jsonOutput), 1000), 1):
-            urls.append(unquote(jsonOutput[output][2]))
+        for row in jsonOutput[1:1000]:
+            if isinstance(row, list) and len(row) > 2:
+                urls.append(unquote(row[2]))
