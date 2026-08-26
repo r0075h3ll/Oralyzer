@@ -1,14 +1,21 @@
-"""Wayback Machine CDX URL discovery for Oralyzer."""
+"""Common Crawl index URL discovery for Oralyzer.
 
-import datetime
+Originally queried the Wayback Machine's CDX API, but web.archive.org
+frequently times out or hangs on wildcard domain queries. Common Crawl's
+CDX-compatible index (index.commoncrawl.org) serves the same kind of
+"every URL we've seen under this domain" query, reliably.
+"""
+
+import json
 import logging
 import re
 from typing import List
-from urllib.parse import unquote
 
 import requests
 
 from .http import HttpClient
+
+COLLECTIONS_URL = "https://index.commoncrawl.org/collinfo.json"
 
 logger = logging.getLogger(__name__)
 
@@ -38,43 +45,48 @@ DORKS = [
 
 
 class WaybackClient:
-    """Client for querying the Wayback Machine CDX API."""
+    """Client for querying Common Crawl's CDX-compatible URL index."""
 
     def __init__(self, http_client: HttpClient):
         self.http_client = http_client
         self._dork_regex = re.compile("|".join(DORKS), re.IGNORECASE)
 
+    def _latest_index_url(self) -> str:
+        """Look up the cdx-api URL for the most recent Common Crawl collection."""
+        response = self.http_client.get(COLLECTIONS_URL)
+        collections = response.json()
+        cdx_api: str = collections[0]["cdx-api"]
+        return cdx_api
+
     def fetch_urls(self, url: str) -> List[str]:
-        """Query CDX API for snapshots from the last two years."""
-        today = datetime.date.today()
-        from_year = today.year - 2
-        to_year = today.year
+        """Query the latest Common Crawl index for URLs under this domain.
 
-        cdx_url = (
-            f"https://web.archive.org/cdx/search/cdx?url={url}*"
-            f"&output=json&collapse=urlkey&filter=statuscode:200"
-            f"&limit=1000&from={from_year}&to={to_year}"
-        )
+        ponytail: only the single most recent collection is queried (a few
+        weeks of crawl data), not Wayback's old multi-year window. Loop over
+        more of collinfo.json's entries here if deeper history is needed.
+        """
+        try:
+            cdx_api = self._latest_index_url()
+        except (requests.exceptions.RequestException, ValueError, KeyError, IndexError):
+            logger.warning("Failed to fetch Common Crawl collection list")
+            return []
+
+        cc_url = f"{cdx_api}?url={url}*&output=json&filter=status:200&limit=1000"
 
         try:
-            response = self.http_client.get(cdx_url)
+            response = self.http_client.get(cc_url)
         except requests.exceptions.RequestException:
-            logger.warning("Failed to fetch from CDX API")
-            return []
-
-        try:
-            data = response.json()
-        except ValueError:
-            logger.warning("CDX API returned invalid JSON")
-            return []
-
-        if not isinstance(data, list):
+            logger.warning("Failed to fetch from Common Crawl index")
             return []
 
         urls = []
-        for row in data[1:1001]:
-            if isinstance(row, list) and len(row) > 2 and isinstance(row[2], str):
-                urls.append(unquote(row[2]))
+        for line in response.text.splitlines()[:1000]:
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict) and isinstance(row.get("url"), str):
+                urls.append(row["url"])
 
         return urls
 
