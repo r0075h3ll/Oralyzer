@@ -37,7 +37,7 @@ class OutputFormatter:
     def _print(self, text: str) -> None:
         """Print text if not in quiet mode."""
         if not self.quiet:
-            print(text)
+            print(text, flush=True)
 
     def banner(self) -> None:
         """Print startup banner."""
@@ -56,25 +56,26 @@ class OutputFormatter:
         proxy: Optional[str] = None,
     ) -> None:
         """Print scan configuration info."""
+        label_width = 10
         if target:
-            self._print(f"Target: {target}")
+            self._print(f"{'Target:':<{label_width}}{target}")
         elif targets_file and target_count:
-            self._print(f"Targets:  {target_count} (from {targets_file})")
+            self._print(f"{'Targets:':<{label_width}}{target_count} (from {targets_file})")
 
         if mode:
-            self._print(f"Mode:     {mode}")
+            self._print(f"{'Mode:':<{label_width}}{mode}")
 
         if payloads:
-            line = f"Payloads: {payloads} | Timeout: {timeout}s"
+            line = f"{'Payloads:':<{label_width}}{payloads} | Timeout: {timeout}s"
             if workers is not None:
                 line += f" | Workers: {workers}"
             self._print(line)
 
         if filter_type:
-            self._print(f"Filter:   {filter_type}")
+            self._print(f"{'Filter:':<{label_width}}{filter_type}")
 
         if proxy:
-            self._print(f"Proxy:    {proxy}")
+            self._print(f"{'Proxy:':<{label_width}}{proxy}")
 
         self._print("")
 
@@ -91,35 +92,37 @@ class OutputFormatter:
             sys.stdout.flush()
 
     def finding(self, finding: Finding) -> None:
-        """Print a finding with [+] prefix."""
+        """Print a finding with [+] prefix. Always shown, even in quiet mode."""
         prefix = self._color("[+]", GREEN)
+        lines = [f"{prefix} "]
 
         if finding.type == "header":
-            self._print(f"{prefix} Header redirect")
-            self._print(f"    URL: {finding.request_url}")
-            self._print(f"    Status: {finding.status_code} | Destination: {finding.destination}")
-            self._print(f"    Payload: {finding.payload}")
+            lines[0] += "Header redirect"
+            lines.append(f"    URL: {finding.request_url}")
+            lines.append(f"    Status: {finding.status_code} | Destination: {finding.destination}")
+            lines.append(f"    Payload: {finding.payload}")
         elif finding.type == "javascript":
-            self._print(f"{prefix} JavaScript redirect")
-            self._print(f"    URL: {finding.request_url}")
+            lines[0] += "JavaScript redirect"
+            lines.append(f"    URL: {finding.request_url}")
             sources_str = ", ".join(finding.sources) if finding.sources else "none"
-            self._print(f"    Status: {finding.status_code} | Sources: {sources_str}")
-            self._print(f"    Payload: {finding.payload}")
+            lines.append(f"    Status: {finding.status_code} | Sources: {sources_str}")
+            lines.append(f"    Payload: {finding.payload}")
         elif finding.type == "meta":
-            self._print(f"{prefix} Meta tag redirect")
-            self._print(f"    URL: {finding.request_url}")
-            self._print(f"    Status: {finding.status_code} | Destination: {finding.destination}")
-            self._print(f"    Payload: {finding.payload}")
+            lines[0] += "Meta tag redirect"
+            lines.append(f"    URL: {finding.request_url}")
+            lines.append(f"    Status: {finding.status_code} | Destination: {finding.destination}")
+            lines.append(f"    Payload: {finding.payload}")
         elif finding.type == "crlf":
-            self._print(f"{prefix} CRLF injection")
-            self._print(f"    URL: {finding.request_url}")
-            self._print(f"    Status: {finding.status_code} | Payload: {finding.payload}")
+            lines[0] += "CRLF injection"
+            lines.append(f"    URL: {finding.request_url}")
+            lines.append(f"    Status: {finding.status_code} | Payload: {finding.payload}")
         else:
-            self._print(f"{prefix} {finding.type}")
-            self._print(f"    URL: {finding.request_url}")
-            self._print(f"    Payload: {finding.payload}")
+            lines[0] += finding.type
+            lines.append(f"    URL: {finding.request_url}")
+            lines.append(f"    Payload: {finding.payload}")
 
-        self._print("")
+        lines.append("")
+        print("\n".join(lines), flush=True)
 
     def error(self, message: str) -> None:
         """Print error message with [-] prefix."""
@@ -138,7 +141,6 @@ class OutputFormatter:
         duration: float,
         limit_reached: bool = False,
         interrupted: bool = False,
-        output_file: Optional[Path] = None,
         urls_found: Optional[int] = None,
     ) -> None:
         """Print scan summary."""
@@ -149,11 +151,12 @@ class OutputFormatter:
         else:
             self._print("Scan complete")
 
-        self._print(f"  Targets:    {targets}")
-        self._print(f"  Requests:   {requests}")
+        label_width = 12
+        self._print(f"  {'Targets:':<{label_width}}{targets}")
+        self._print(f"  {'Requests:':<{label_width}}{requests}")
 
         if urls_found is not None:
-            self._print(f"  URLs found: {urls_found}")
+            self._print(f"  {'URLs found:':<{label_width}}{urls_found}")
         else:
             # Count findings by type
             counts: dict[str, int] = {}
@@ -162,9 +165,9 @@ class OutputFormatter:
 
             if counts:
                 counts_str = ", ".join(f"{count} {ftype}" for ftype, count in counts.items())
-                self._print(f"  Findings:   {len(findings)} ({counts_str})")
+                self._print(f"  {'Findings:':<{label_width}}{len(findings)} ({counts_str})")
             else:
-                self._print("  Findings:   0")
+                self._print(f"  {'Findings:':<{label_width}}0")
 
         # Format duration
         if duration < 60:
@@ -174,10 +177,7 @@ class OutputFormatter:
             seconds = int(duration % 60)
             duration_str = f"{minutes}m {seconds}s"
 
-        self._print(f"  Duration:   {duration_str}")
-
-        if output_file:
-            self._print(f"\nResults saved to {output_file}")
+        self._print(f"  {'Duration:':<{label_width}}{duration_str}")
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -377,16 +377,22 @@ def main() -> None:
                     progress_callback=progress_callback,
                 )
                 requests_before_target += last_target_total
+                formatter.clear_progress()
 
+                target_had_finding = False
                 for finding in crlf_findings:
                     if args.filter and finding.type != args.filter:
                         continue
                     all_findings.append(finding)
                     formatter.finding(finding)
+                    target_had_finding = True
 
                     if args.limit and len(all_findings) >= args.limit:
                         limit_reached = True
                         break
+
+                if not target_had_finding and target_count > 1:
+                    formatter.error("No findings")
 
         elif args.wayback:
             formatter.info("Querying archive.org...\n")
@@ -403,6 +409,7 @@ def main() -> None:
                     if len(wayback_findings) > 3:
                         formatter.info(f"  ... and {len(wayback_findings) - 3} more\n")
                 else:
+                    formatter.info("")
                     formatter.error("No findings")
 
         else:
@@ -471,7 +478,6 @@ def main() -> None:
         duration=duration,
         limit_reached=limit_reached,
         interrupted=interrupted,
-        output_file=args.output,
         urls_found=urls_found if args.wayback else None,
     )
 
@@ -481,6 +487,7 @@ def main() -> None:
             f.to_dict() if hasattr(f, "to_dict") else f for f in all_findings
         ]
         save_findings(findings_dicts, args.output)
+        formatter.info(f"\nResults saved to {args.output}")
 
 
 if __name__ == "__main__":
