@@ -10,7 +10,7 @@ A Python tool for Open Redirect vulnerabilities. It fuzzes the target URL with r
 
 - **Open Redirect Detection**: Header, JavaScript, and meta-tag redirects
 - **CRLF Injection Scanning**: HTTP response splitting vulnerabilities
-- **Wayback Machine Integration**: Harvest candidate URLs from archive.org
+- **URL Discovery**: Harvest candidate URLs from Common Crawl's index
 - **JSON Export**: Export findings for further analysis
 - **Proxy Support**: Route requests through HTTP proxies
 
@@ -73,8 +73,8 @@ oralyzer -u https://example.com/login -o results.json
 # CRLF injection scan
 oralyzer -u https://example.com/ -crlf
 
-# Harvest URLs from Wayback Machine
-oralyzer -u example.com --wayback
+# Harvest URLs from Common Crawl
+oralyzer -u example.com --discover
 
 # Use proxy
 oralyzer -u https://example.com/ --proxy http://127.0.0.1:8080
@@ -95,7 +95,7 @@ oralyzer -l targets.txt --workers 10 -o results.json
 | `-p, --payload PATH` | Use custom payloads file |
 | `-o, --output PATH` | Export findings to JSON |
 | `-crlf` | Scan for CRLF injection |
-| `--wayback` | Fetch URLs from archive.org |
+| `--discover` | Harvest candidate URLs from Common Crawl |
 | `--proxy URL` | Route requests through proxy |
 | `--timeout SECONDS` | Request timeout (default: 10) |
 | `--workers N` | Concurrent workers (default: 5) |
@@ -127,46 +127,3 @@ Findings are exported as JSON:
   }
 ]
 ```
-
-## Project Structure
-
-```
-src/oralyzer/
-├── __init__.py          # Package initialization
-├── __main__.py          # Module entry point
-├── cli.py               # Command-line interface
-├── scanner.py           # Main scanning orchestration
-├── core/
-│   ├── __init__.py
-│   ├── http.py          # HTTP client with connection pooling
-│   ├── payloads.py      # Payload generation and loading
-│   ├── detection.py     # Response analysis
-│   ├── crlf.py          # CRLF injection scanning
-│   └── wayback.py       # Wayback Machine integration
-└── data/
-    └── payloads.txt     # Default payload list
-```
-
-## Development
-
-```sh
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Type checking
-mypy src/oralyzer
-
-# Linting
-ruff check src/oralyzer
-```
-
-## License
-
-GPL-3.0
-
-## Credits
-
-Original author: r0075h3ll
