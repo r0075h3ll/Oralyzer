@@ -1,51 +1,107 @@
 # Oralyzer
 
-![Python](https://img.shields.io/badge/Python-3.x-blue)
+![Python](https://img.shields.io/badge/Python-3.8+-blue)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 ![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
-A simple Python script that probes websites for Open Redirect vulnerabilities by
-fuzzing the target URL with a large set of redirect payloads and reporting which
-payloads the server follows to an external host.
+A Python tool that probes websites for Open Redirect vulnerabilities by fuzzing the target URL with redirect payloads and reporting which payloads the server follows to an external host.
+
+## Features
+
+- **Open Redirect Detection**: Header, JavaScript, and meta-tag redirects
+- **CRLF Injection Scanning**: HTTP response splitting vulnerabilities
+- **Wayback Machine Integration**: Harvest candidate URLs from archive.org
+- **JSON Export**: Export findings for further analysis
+- **Proxy Support**: Route requests through HTTP proxies
+
+## Installation
+
+### With pipx (recommended)
+
+pipx installs CLI tools into isolated environments, so `oralyzer` works
+system-wide without touching your system Python. This avoids the
+`externally-managed-environment` error on Debian/Ubuntu (PEP 668).
+
+```sh
+# Install pipx if you don't have it
+sudo apt install pipx
+pipx ensurepath
+
+# Install Oralyzer
+pipx install oralyzer
+```
+
+### With pip in a virtual environment
+
+If you prefer plain pip, create a venv first:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install oralyzer
+```
+
+### From source
+
+```sh
+git clone https://github.com/r0075h3ll/Oralyzer.git
+cd Oralyzer
+pipx install .
+# or, inside a venv:
+pip install .
+```
+
+Or run directly without installing:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install .
+python -m oralyzer -u https://example.com/
+```
 
 ## Usage
 
-Oralyzer detects open redirects delivered via headers, JavaScript, and meta-tag
-refresh, plus CRLF injection.
-
-```
-usage: oralyzer [-h] [-u URL] [-o EXPORT] [-l PATH] [-crlf]
-                [-p PAYLOAD] [--proxy] [--wayback]
-```
-
-| Flag | Description |
-| --- | --- |
-| `-u URL` | Scan a single target |
-| `-l PATH` | Scan multiple targets from a file (one URL per line) |
-| `-p PAYLOAD` | Use a custom payloads file (defaults to bundled list) |
-| `-o EXPORT` | Export all findings to a JSON file |
-| `-crlf` | Scan for CRLF injection |
-| `--wayback` | Fetch candidate URLs from web.archive.org |
-| `--proxy` | Route requests through a proxy |
-
 ```sh
-# single target
-python oralyzer.py -u https://example.com/login
+# Single target
+oralyzer -u https://example.com/login
 
-# export findings to JSON
-python oralyzer.py -u https://example.com/login -o results.json
+# Multiple targets from file
+oralyzer -l targets.txt
 
-# many targets from a file
-python oralyzer.py -l targets.txt
+# Export findings to JSON
+oralyzer -u https://example.com/login -o results.json
 
 # CRLF injection scan
-python oralyzer.py -u https://example.com/ -crlf
+oralyzer -u https://example.com/ -crlf
 
-# harvest vulnerable-looking URLs from the wayback machine
-python oralyzer.py -u example.com --wayback
+# Harvest URLs from Wayback Machine
+oralyzer -u example.com --wayback
+
+# Use proxy
+oralyzer -u https://example.com/ --proxy http://127.0.0.1:8080
+
+# Verbose logging
+oralyzer -u https://example.com/ -v
 ```
 
-Findings can be exported to a JSON array (`-o`). Redirect records look like:
+### Command-line Options
+
+| Option | Description |
+|--------|-------------|
+| `-u, --url URL` | Scan a single target |
+| `-l, --list PATH` | Scan multiple targets from a file |
+| `-p, --payload PATH` | Use custom payloads file |
+| `-o, --output PATH` | Export findings to JSON |
+| `-crlf` | Scan for CRLF injection |
+| `--wayback` | Fetch URLs from archive.org |
+| `--proxy URL` | Route requests through proxy |
+| `--timeout SECONDS` | Request timeout (default: 10) |
+| `-v, --verbose` | Enable verbose logging |
+
+## Output Format
+
+Findings are exported as JSON:
 
 ```json
 [
@@ -55,27 +111,56 @@ Findings can be exported to a JSON array (`-o`). Redirect records look like:
     "payload": "//evil.com",
     "status_code": 302,
     "destination": "https://evil.com"
+  },
+  {
+    "type": "javascript",
+    "request_url": "https://example.com/page",
+    "payload": "//evil.com",
+    "status_code": 200,
+    "sources": ["location.href", "document.URL"]
   }
 ]
 ```
 
-Wayback records carry `target` and `found_url` instead.
+## Project Structure
 
-## Installation
-
-Either install as a package (gives you a global `oralyzer` command):
-
-```sh
-git clone https://github.com/r0075h3ll/Oralyzer.git
-cd Oralyzer
-pip install .
+```
+src/oralyzer/
+├── __init__.py          # Package initialization
+├── __main__.py          # Module entry point
+├── cli.py               # Command-line interface
+├── scanner.py           # Main scanning orchestration
+├── core/
+│   ├── __init__.py
+│   ├── http.py          # HTTP client with connection pooling
+│   ├── payloads.py      # Payload generation and loading
+│   ├── detection.py     # Response analysis
+│   ├── crlf.py          # CRLF injection scanning
+│   └── wayback.py       # Wayback Machine integration
+└── data/
+    └── payloads.txt     # Default payload list
 ```
 
-Or run straight from a checkout:
+## Development
 
 ```sh
-git clone https://github.com/r0075h3ll/Oralyzer.git
-cd Oralyzer
-pip install -r requirements.txt
-python oralyzer.py -u https://example.com/
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Type checking
+mypy src/oralyzer
+
+# Linting
+ruff check src/oralyzer
 ```
+
+## License
+
+GPL-3.0
+
+## Credits
+
+Original author: r0075h3ll
