@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 ![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
-A Python tool that probes websites for Open Redirect vulnerabilities by fuzzing the target URL with redirect payloads and reporting which payloads the server follows to an external host.
+A Python tool for Open Redirect vulnerabilities. It fuzzes the target URL with redirect payloads and reports which ones the server actually follows to an external host.
 
 ## Features
 
@@ -18,9 +18,7 @@ A Python tool that probes websites for Open Redirect vulnerabilities by fuzzing 
 
 ### With pipx (recommended)
 
-pipx installs CLI tools into isolated environments, so `oralyzer` works
-system-wide without touching your system Python. This avoids the
-`externally-managed-environment` error on Debian/Ubuntu (PEP 668).
+pipx installs CLI tools into isolated environments, so `oralyzer` works system-wide without touching your system Python — and you sidestep the `externally-managed-environment` error on Debian/Ubuntu (PEP 668).
 
 ```sh
 # Install pipx if you don't have it
@@ -33,7 +31,7 @@ pipx install oralyzer
 
 ### With pip in a virtual environment
 
-If you prefer plain pip, create a venv first:
+Prefer plain pip? Create a venv first:
 
 ```sh
 python3 -m venv .venv
@@ -51,7 +49,7 @@ pipx install .
 pip install .
 ```
 
-Or run directly without installing:
+Or skip installing altogether and run it directly:
 
 ```sh
 python3 -m venv .venv
