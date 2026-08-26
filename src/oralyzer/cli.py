@@ -213,7 +213,7 @@ def parse_args() -> argparse.Namespace:
         "-crlf", action="store_true", help="Scan for CRLF injection"
     )
     parser.add_argument(
-        "--wayback", action="store_true", help="Fetch URLs from archive.org"
+        "--discover", action="store_true", help="Harvest candidate URLs from Common Crawl's index"
     )
     parser.add_argument("--proxy", help="Proxy URL (e.g., http://127.0.0.1:8080)")
     parser.add_argument(
@@ -278,7 +278,7 @@ def print_usage(formatter: OutputFormatter) -> None:
     formatter.info("  -p <file>         Custom payloads file")
     formatter.info("  -o <file>         Save findings as JSON")
     formatter.info("  -crlf             CRLF injection scan")
-    formatter.info("  --wayback         Wayback URL discovery")
+    formatter.info("  --discover        Harvest URLs (Common Crawl)")
     formatter.info("  --proxy <url>     Proxy (e.g. http://127.0.0.1:8080)")
     formatter.info("  --timeout <n>     Timeout in seconds (default: 10)")
     formatter.info("  --workers <n>     Concurrent workers (default: 5)")
@@ -317,8 +317,8 @@ def main() -> None:
         print_usage(formatter)
         sys.exit(0)
 
-    if args.payload and (args.crlf or args.wayback):
-        formatter.error("'-p' cannot be used with '-crlf' or '--wayback'")
+    if args.payload and (args.crlf or args.discover):
+        formatter.error("'-p' cannot be used with '-crlf' or '--discover'")
         sys.exit(1)
 
     scanner = Scanner(proxy=args.proxy, timeout=args.timeout, max_workers=args.workers)
@@ -330,8 +330,8 @@ def main() -> None:
     mode = None
     if args.crlf:
         mode = "CRLF injection scan"
-    elif args.wayback:
-        mode = "Wayback Machine URL discovery"
+    elif args.discover:
+        mode = "Common Crawl URL discovery"
 
     # Print banner and scan info
     formatter.banner()
@@ -339,9 +339,9 @@ def main() -> None:
         target=args.url if args.url else None,
         targets_file=Path(args.path) if args.path else None,
         target_count=target_count if not args.url else None,
-        payloads=len(load_payloads(args.payload)) if args.payload and not args.crlf and not args.wayback else (len(CRLF_PAYLOADS) if args.crlf else None),
+        payloads=len(load_payloads(args.payload)) if args.payload and not args.crlf and not args.discover else (len(CRLF_PAYLOADS) if args.crlf else None),
         timeout=args.timeout,
-        workers=args.workers if not args.crlf and not args.wayback else None,
+        workers=args.workers if not args.crlf and not args.discover else None,
         mode=mode,
         filter_type=args.filter,
         proxy=args.proxy,
@@ -394,20 +394,21 @@ def main() -> None:
                 if not target_had_finding and target_count > 1:
                     formatter.error("No findings")
 
-        elif args.wayback:
-            formatter.info("Querying archive.org...\n")
+        elif args.discover:
+            formatter.info("Querying Common Crawl...\n")
             for target in targets:
-                wayback_findings = scanner.scan_wayback(target)
-                urls_found += len(wayback_findings)
-                all_findings.extend(wayback_findings)
+                discover_findings = scanner.scan_wayback(target)
+                urls_found += len(discover_findings)
+                all_findings.extend(discover_findings)
 
-                if wayback_findings:
-                    formatter.info(f"[+] Found {len(wayback_findings)} URLs matching redirect patterns\n")
-                    formatter.info("Sample matches:")
-                    for wf in wayback_findings[:3]:
-                        formatter.info(f"  {wf['found_url']}")
-                    if len(wayback_findings) > 3:
-                        formatter.info(f"  ... and {len(wayback_findings) - 3} more\n")
+                if discover_findings:
+                    lines = [f"[+] Found {len(discover_findings)} URLs matching redirect patterns\n"]
+                    lines.append("Sample matches:")
+                    for wf in discover_findings[:3]:
+                        lines.append(f"  {wf['found_url']}")
+                    if len(discover_findings) > 3:
+                        lines.append(f"  ... and {len(discover_findings) - 3} more\n")
+                    print("\n".join(lines), flush=True)
                 else:
                     formatter.info("")
                     formatter.error("No findings")
@@ -478,7 +479,7 @@ def main() -> None:
         duration=duration,
         limit_reached=limit_reached,
         interrupted=interrupted,
-        urls_found=urls_found if args.wayback else None,
+        urls_found=urls_found if args.discover else None,
     )
 
     # Save results

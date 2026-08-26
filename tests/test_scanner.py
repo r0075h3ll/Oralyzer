@@ -1,14 +1,16 @@
 """Basic tests for Oralyzer core functionality."""
 
-import pytest
 from pathlib import Path
 
+import pytest
+
 from oralyzer.core import (
+    Finding,
     HttpClient,
     ResponseAnalyzer,
-    Finding,
-    load_payloads,
+    WaybackClient,
     build_test_cases,
+    load_payloads,
 )
 from oralyzer.scanner import Scanner
 
@@ -107,8 +109,9 @@ class TestResponseAnalyzer:
         assert analyzer.payloads == payloads
 
     def test_analyze_redirect_no_vulnerability(self):
-        import requests
         from unittest.mock import Mock
+
+        import requests
 
         payloads = ["//evil.com"]
         analyzer = ResponseAnalyzer(payloads)
@@ -129,8 +132,9 @@ class TestScanner:
 
     @staticmethod
     def _mock_response(status_code=200, text="", headers=None):
-        import requests
         from unittest.mock import Mock
+
+        import requests
 
         response = Mock(spec=requests.Response)
         response.status_code = status_code
@@ -208,3 +212,118 @@ class TestScanner:
 
         assert findings == []
         assert seen[-1] == (3, 3)
+
+
+class _FakeResponse:
+    """Minimal response stand-in with both .text and .json()."""
+
+    def __init__(self, text):
+        self.text = text
+
+    def json(self):
+        import json
+        return json.loads(self.text)
+
+
+class TestWaybackClient:
+    """Tests for Common Crawl URL discovery."""
+
+    COLLINFO = '[{"cdx-api": "https://index.commoncrawl.org/CC-MAIN-2026-34-index"}]'
+
+    def test_fetch_urls_parses_jsonl(self):
+        client = WaybackClient(HttpClient())
+        calls = []
+
+        def fake_get(url, params=None, **kwargs):
+            calls.append(url)
+            if "collinfo.json" in url:
+                return _FakeResponse(self.COLLINFO)
+            return _FakeResponse(
+                '{"url": "https://example.com/login?next=/account", "status": "200"}\n'
+                '{"url": "https://example.com/page", "status": "200"}\n'
+            )
+
+        client.http_client.get = fake_get
+        urls = client.fetch_urls("example.com")
+
+        assert urls == [
+            "https://example.com/login?next=/account",
+            "https://example.com/page",
+        ]
+        assert len(calls) == 2
+
+    def test_fetch_urls_collection_lookup_failure(self):
+        import requests
+
+        client = WaybackClient(HttpClient())
+
+        def fake_get(url, params=None, **kwargs):
+            raise requests.exceptions.RequestException("boom")
+
+        client.http_client.get = fake_get
+        assert client.fetch_urls("example.com") == []
+
+    def test_fetch_urls_collection_lookup_malformed(self):
+        client = WaybackClient(HttpClient())
+
+        def fake_get(url, params=None, **kwargs):
+            return _FakeResponse("[]")  # no collections -> IndexError
+
+        client.http_client.get = fake_get
+        assert client.fetch_urls("example.com") == []
+
+    def test_fetch_urls_cdx_query_failure(self):
+        import requests
+
+        client = WaybackClient(HttpClient())
+
+        def fake_get(url, params=None, **kwargs):
+            if "collinfo.json" in url:
+                return _FakeResponse(self.COLLINFO)
+            raise requests.exceptions.RequestException("boom")
+
+        client.http_client.get = fake_get
+        assert client.fetch_urls("example.com") == []
+
+    def test_fetch_urls_truncates_to_1000(self):
+        client = WaybackClient(HttpClient())
+        lines = "\n".join(
+            f'{{"url": "https://example.com/{i}", "status": "200"}}'
+            for i in range(1005)
+        )
+
+        def fake_get(url, params=None, **kwargs):
+            if "collinfo.json" in url:
+                return _FakeResponse(self.COLLINFO)
+            return _FakeResponse(lines)
+
+        client.http_client.get = fake_get
+        assert len(client.fetch_urls("example.com")) == 1000
+
+    def test_fetch_urls_skips_malformed_lines(self):
+        client = WaybackClient(HttpClient())
+
+        def fake_get(url, params=None, **kwargs):
+            if "collinfo.json" in url:
+                return _FakeResponse(self.COLLINFO)
+            return _FakeResponse(
+                'not json\n{"url": "https://example.com/", "status": "200"}\n'
+            )
+
+        client.http_client.get = fake_get
+        assert client.fetch_urls("example.com") == ["https://example.com/"]
+
+    def test_get_matching_urls_filters_by_dork(self):
+        client = WaybackClient(HttpClient())
+        client.fetch_urls = lambda url: [
+            "https://example.com/page",
+            "https://example.com/login?next=/account",
+            "https://example.com/out?url=http://evil.com",
+        ]
+
+        matched = client.get_matching_urls("example.com")
+
+        assert matched == [
+            "https://example.com/login?next=/account",
+            "https://example.com/out?url=http://evil.com",
+        ]
