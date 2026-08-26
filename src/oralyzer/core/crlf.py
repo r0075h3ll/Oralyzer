@@ -48,37 +48,26 @@ def scan_crlf(
     analyzer = ResponseAnalyzer(CRLF_PAYLOADS)
     findings = []
 
-    test_cases = build_test_cases(url, CRLF_PAYLOADS)
-
-    if len(test_cases) == 3:
-        queries, payloads, base_url = test_cases
-        total = len(queries)
-
-        for i, (params, payload) in enumerate(zip(queries, payloads), 1):
-            if progress_callback:
-                progress_callback(i, total)
-
-            try:
-                response = http_client.get(base_url, params=params)
-                finding = analyzer.analyze_crlf(response, payload)
-                if finding:
-                    findings.append(finding)
-            except requests.exceptions.RequestException as e:
-                logger.warning("Request failed for %s: %s", base_url, e)
+    cases = build_test_cases(url, CRLF_PAYLOADS)
+    targets: List[tuple[str, Optional[dict], str]]
+    if len(cases) == 3:
+        queries, payloads, base_url = cases
+        targets = [(base_url, q, p) for q, p in zip(queries, payloads)]
     else:
-        urls, payloads = test_cases
-        total = len(urls)
+        urls, payloads = cases
+        targets = [(u, None, p) for u, p in zip(urls, payloads)]
 
-        for i, (test_url, payload) in enumerate(zip(urls, payloads), 1):
-            if progress_callback:
-                progress_callback(i, total)
+    total = len(targets)
+    for i, (target, params, payload) in enumerate(targets, 1):
+        if progress_callback:
+            progress_callback(i, total)
 
-            try:
-                response = http_client.get(test_url)
-                finding = analyzer.analyze_crlf(response, payload)
-                if finding:
-                    findings.append(finding)
-            except requests.exceptions.RequestException as e:
-                logger.warning("Request failed for %s: %s", test_url, e)
+        try:
+            response = http_client.get(target, params=params)
+            finding = analyzer.analyze_crlf(response, payload)
+            if finding:
+                findings.append(finding)
+        except requests.exceptions.RequestException as e:
+            logger.warning("Request failed for %s: %s", target, e)
 
     return findings
