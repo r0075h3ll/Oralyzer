@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import List, Optional
 
-from .core import Finding, load_payloads, scan_crlf
+from .core import CRLF_PAYLOADS, Finding, load_payloads, scan_crlf
 from .scanner import Scanner
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class OutputFormatter:
         target_count: Optional[int] = None,
         payloads: Optional[int] = None,
         timeout: int = 10,
-        workers: int = 5,
+        workers: Optional[int] = None,
         mode: Optional[str] = None,
         filter_type: Optional[str] = None,
         proxy: Optional[str] = None,
@@ -65,7 +65,10 @@ class OutputFormatter:
             self._print(f"Mode:     {mode}")
 
         if payloads:
-            self._print(f"Payloads: {payloads} | Timeout: {timeout}s | Workers: {workers}")
+            line = f"Payloads: {payloads} | Timeout: {timeout}s"
+            if workers is not None:
+                line += f" | Workers: {workers}"
+            self._print(line)
 
         if filter_type:
             self._print(f"Filter:   {filter_type}")
@@ -126,10 +129,6 @@ class OutputFormatter:
     def info(self, message: str) -> None:
         """Print info message."""
         self._print(message)
-
-    def separator(self) -> None:
-        """Print separator line."""
-        self._print("\n---\n")
 
     def summary(
         self,
@@ -340,9 +339,9 @@ def main() -> None:
         target=args.url if args.url else None,
         targets_file=Path(args.path) if args.path else None,
         target_count=target_count if not args.url else None,
-        payloads=len(load_payloads(args.payload)) if args.payload and not args.crlf and not args.wayback else (13 if args.crlf else None),
+        payloads=len(load_payloads(args.payload)) if args.payload and not args.crlf and not args.wayback else (len(CRLF_PAYLOADS) if args.crlf else None),
         timeout=args.timeout,
-        workers=args.workers,
+        workers=args.workers if not args.crlf and not args.wayback else None,
         mode=mode,
         filter_type=args.filter,
         proxy=args.proxy,
@@ -351,28 +350,33 @@ def main() -> None:
     all_findings: List[Finding | dict] = []
     start_time = time.time()
     total_requests = 0
+    requests_before_target = 0
+    last_target_total = 0
     limit_reached = False
     interrupted = False
     urls_found = 0
 
     def progress_callback(current: int, total: int) -> None:
-        nonlocal total_requests
-        total_requests = current
+        nonlocal total_requests, last_target_total
+        last_target_total = total
+        total_requests = requests_before_target + current
         formatter.progress(current, total)
 
     try:
         if args.crlf:
-            for target in targets:
+            for i, target in enumerate(targets, 1):
                 if args.limit and len(all_findings) >= args.limit:
                     limit_reached = True
                     break
 
-                formatter.info(f"[1/{target_count}] {target}" if target_count > 1 else "")
+                if target_count > 1:
+                    formatter.info(f"[{i}/{target_count}] {target}")
                 crlf_findings = scan_crlf(
                     target,
                     scanner.http_client,
                     progress_callback=progress_callback,
                 )
+                requests_before_target += last_target_total
 
                 for finding in crlf_findings:
                     if args.filter and finding.type != args.filter:
@@ -437,6 +441,7 @@ def main() -> None:
                         filter_type=args.filter,
                     )
 
+                    requests_before_target += last_target_total
                     formatter.clear_progress()
 
                     for finding in redirect_findings:
@@ -458,7 +463,7 @@ def main() -> None:
     duration = time.time() - start_time
 
     # Print summary
-    formatter.separator()
+    formatter.info("\n---\n")
     formatter.summary(
         targets=target_count,
         requests=total_requests,

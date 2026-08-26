@@ -80,11 +80,4 @@ class WaybackClient:
 
     def get_matching_urls(self, url: str) -> List[str]:
         """Fetch URLs and filter by dork patterns."""
-        all_urls = self.fetch_urls(url)
-        matched = []
-
-        for found_url in all_urls:
-            if self._dork_regex.search(found_url):
-                matched.append(found_url)
-
-        return matched
+        return [u for u in self.fetch_urls(url) if self._dork_regex.search(u)]
