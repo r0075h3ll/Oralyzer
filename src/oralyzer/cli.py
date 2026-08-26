@@ -41,7 +41,7 @@ class OutputFormatter:
 
     def banner(self) -> None:
         """Print startup banner."""
-        self._print("  Oralyzer v2.0.0\n")
+        self._print("\n  Oralyzer v2.0.0\n")
 
     def scan_info(
         self,
@@ -50,6 +50,7 @@ class OutputFormatter:
         target_count: Optional[int] = None,
         payloads: Optional[int] = None,
         timeout: int = 10,
+        workers: int = 5,
         mode: Optional[str] = None,
         filter_type: Optional[str] = None,
         proxy: Optional[str] = None,
@@ -64,7 +65,7 @@ class OutputFormatter:
             self._print(f"Mode:     {mode}")
 
         if payloads:
-            self._print(f"Payloads: {payloads} | Timeout: {timeout}s")
+            self._print(f"Payloads: {payloads} | Timeout: {timeout}s | Workers: {workers}")
 
         if filter_type:
             self._print(f"Filter:   {filter_type}")
@@ -193,9 +194,12 @@ def setup_logging(verbose: bool = False) -> None:
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Open redirect and CRLF injection scanner"
+        description="Open redirect and CRLF injection scanner", add_help=False
     )
 
+    parser.add_argument(
+        "-h", "--help", action="store_true", help="Show this help message and exit"
+    )
     parser.add_argument("-u", "--url", help="Scan a single target")
     parser.add_argument(
         "-l", "--list", dest="path", help="Scan multiple targets from a file", type=Path
@@ -217,6 +221,9 @@ def parse_args() -> argparse.Namespace:
         "--timeout", type=int, default=10, help="Request timeout in seconds"
     )
     parser.add_argument(
+        "--workers", type=int, default=5, help="Concurrent workers (default: 5)"
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose logging"
     )
     parser.add_argument(
@@ -236,8 +243,13 @@ def parse_args() -> argparse.Namespace:
 
     args = parser.parse_args()
 
+    if args.help:
+        return args
+
     if args.timeout < 1:
         parser.error("--timeout must be at least 1")
+    if args.workers < 1:
+        parser.error("--workers must be at least 1")
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be at least 1")
 
@@ -254,6 +266,33 @@ def load_targets(path: Path) -> List[str]:
     except UnicodeDecodeError:
         logger.error("Target file is not valid UTF-8: %s", path)
         sys.exit(1)
+
+
+def print_usage(formatter: OutputFormatter) -> None:
+    """Print the banner, options, and examples."""
+    formatter.banner()
+    formatter.info("Open Redirect & CRLF Injection Scanner\n")
+    formatter.info("Usage: oralyzer -u <url> [options] | -l <file> [options]\n")
+    formatter.info("Options:")
+    formatter.info("  -u <url>          Single target")
+    formatter.info("  -l <file>         Targets file (one per line)")
+    formatter.info("  -p <file>         Custom payloads file")
+    formatter.info("  -o <file>         Save findings as JSON")
+    formatter.info("  -crlf             CRLF injection scan")
+    formatter.info("  --wayback         Wayback URL discovery")
+    formatter.info("  --proxy <url>     Proxy (e.g. http://127.0.0.1:8080)")
+    formatter.info("  --timeout <n>     Timeout in seconds (default: 10)")
+    formatter.info("  --workers <n>     Concurrent workers (default: 5)")
+    formatter.info("  --limit <n>       Stop after N findings")
+    formatter.info("  --filter <type>   header, javascript, meta, crlf")
+    formatter.info("  -q, --quiet       Only findings")
+    formatter.info("  --no-color        Disable colors")
+    formatter.info("  -v, --verbose     Verbose logging")
+    formatter.info("")
+    formatter.info("Examples:")
+    formatter.info("  oralyzer -u https://example.com")
+    formatter.info("  oralyzer -l targets.txt -o out.json --workers 10")
+    formatter.info("")
 
 
 def save_findings(findings: List[dict], output_path: Path) -> None:
@@ -275,56 +314,15 @@ def main() -> None:
 
     formatter = OutputFormatter(quiet=args.quiet, no_color=args.no_color)
 
-    if not (args.url or args.path):
-        formatter.banner()
-        formatter.info("Open Redirect & CRLF Injection Scanner\n")
-
-        formatter.info("Usage:")
-        formatter.info("  oralyzer -u <url> [options]")
-        formatter.info("  oralyzer -l <targets-file> [options]")
-        formatter.info("")
-
-        formatter.info("Targets:")
-        formatter.info("  -u <url>          Scan a single URL")
-        formatter.info("  -l <file>         Scan URLs from a file (one per line)")
-        formatter.info("")
-
-        formatter.info("Scan modes:")
-        formatter.info("  (default)         Open redirect scan")
-        formatter.info("  -crlf             CRLF injection scan")
-        formatter.info("  --wayback         Find candidate URLs from archive.org")
-        formatter.info("")
-
-        formatter.info("Output:")
-        formatter.info("  -o <file>         Export findings to JSON")
-        formatter.info("  -q, --quiet       Only show findings")
-        formatter.info("  --no-color        Disable colored output")
-        formatter.info("  --limit <n>       Stop after n findings")
-        formatter.info("  --filter <type>   Only report: header, javascript, meta, crlf")
-        formatter.info("")
-
-        formatter.info("Options:")
-        formatter.info("  -p <file>         Use custom payloads file (redirect scans only)")
-        formatter.info("  --proxy <url>     Route requests through a proxy (e.g. http://127.0.0.1:8080)")
-        formatter.info("  --timeout <s>     Request timeout in seconds (default: 10)")
-        formatter.info("  -v, --verbose     Enable verbose logging")
-        formatter.info("")
-
-        formatter.info("Examples:")
-        formatter.info("  oralyzer -u https://example.com")
-        formatter.info("  oralyzer -l targets.txt -o results.json")
-        formatter.info("  oralyzer -u https://example.com -crlf")
-        formatter.info("  oralyzer -u example.com --wayback")
-        formatter.info("")
-
-        formatter.info("Run 'oralyzer --help' for full usage")
+    if args.help or not (args.url or args.path):
+        print_usage(formatter)
         sys.exit(0)
 
     if args.payload and (args.crlf or args.wayback):
         formatter.error("'-p' cannot be used with '-crlf' or '--wayback'")
         sys.exit(1)
 
-    scanner = Scanner(proxy=args.proxy, timeout=args.timeout)
+    scanner = Scanner(proxy=args.proxy, timeout=args.timeout, max_workers=args.workers)
 
     targets = [args.url] if args.url else load_targets(args.path)
     target_count = len(targets)
@@ -344,6 +342,7 @@ def main() -> None:
         target_count=target_count if not args.url else None,
         payloads=len(load_payloads(args.payload)) if args.payload and not args.crlf and not args.wayback else (13 if args.crlf else None),
         timeout=args.timeout,
+        workers=args.workers,
         mode=mode,
         filter_type=args.filter,
         proxy=args.proxy,
@@ -405,34 +404,51 @@ def main() -> None:
         else:
             payloads = load_payloads(args.payload) if args.payload else load_payloads()
 
-            for i, target in enumerate(targets, 1):
-                if args.limit and len(all_findings) >= args.limit:
-                    limit_reached = True
-                    break
-
-                if target_count > 1:
-                    formatter.info(f"[{i}/{target_count}] {target}")
-
-                redirect_findings = scanner.scan_redirect(
-                    target,
+            if target_count > 1 and scanner.max_workers > 1:
+                redirect_findings, empty_targets = scanner.scan_multiple(
+                    targets,
                     payloads,
                     progress_callback=progress_callback,
-                    limit=args.limit - len(all_findings) if args.limit else None,
+                    limit=args.limit,
                     filter_type=args.filter,
                 )
-
                 formatter.clear_progress()
-
                 for finding in redirect_findings:
                     all_findings.append(finding)
                     formatter.finding(finding)
-
-                if not redirect_findings and target_count > 1:
-                    formatter.error("No findings")
-
+                for target in empty_targets:
+                    formatter.error(f"No findings: {target}")
                 if args.limit and len(all_findings) >= args.limit:
                     limit_reached = True
-                    break
+            else:
+                for i, target in enumerate(targets, 1):
+                    if args.limit and len(all_findings) >= args.limit:
+                        limit_reached = True
+                        break
+
+                    if target_count > 1:
+                        formatter.info(f"[{i}/{target_count}] {target}")
+
+                    redirect_findings = scanner.scan_redirect(
+                        target,
+                        payloads,
+                        progress_callback=progress_callback,
+                        limit=args.limit - len(all_findings) if args.limit else None,
+                        filter_type=args.filter,
+                    )
+
+                    formatter.clear_progress()
+
+                    for finding in redirect_findings:
+                        all_findings.append(finding)
+                        formatter.finding(finding)
+
+                    if not redirect_findings and target_count > 1:
+                        formatter.error("No findings")
+
+                    if args.limit and len(all_findings) >= args.limit:
+                        limit_reached = True
+                        break
 
     except KeyboardInterrupt:
         interrupted = True
