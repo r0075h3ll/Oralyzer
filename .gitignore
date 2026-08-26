@@ -7,3 +7,9 @@ venv/
 dist/
 build/
 .DS_Store
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.json
+!pyproject.toml
+ARCHITECTURE.md
