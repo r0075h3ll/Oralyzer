@@ -83,6 +83,9 @@ oralyzer -u https://example.com/ --proxy http://127.0.0.1:8080
 
 # Verbose logging
 oralyzer -u https://example.com/ -v
+
+# Concurrent scanning with custom workers
+oralyzer -l targets.txt --workers 10 -o results.json
 ```
 
 ### Command-line Options
@@ -97,6 +100,11 @@ oralyzer -u https://example.com/ -v
 | `--wayback` | Fetch URLs from archive.org |
 | `--proxy URL` | Route requests through proxy |
 | `--timeout SECONDS` | Request timeout (default: 10) |
+| `--workers N` | Concurrent workers (default: 5) |
+| `--limit N` | Stop after N findings |
+| `--filter TYPE` | Only report: `header`, `javascript`, `meta`, `crlf` |
+| `-q, --quiet` | Only show findings |
+| `--no-color` | Disable colored output |
 | `-v, --verbose` | Enable verbose logging |
 
 ## Output Format
