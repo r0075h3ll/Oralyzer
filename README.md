@@ -1,5 +1,6 @@
 # Oralyzer
 
+![PyPI](https://img.shields.io/pypi/v/oralyzer)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 ![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
